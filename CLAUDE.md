@@ -119,5 +119,9 @@ good LiDAR, big meandering river to prove channel burning).
 - Stage 4 (2026-09-05): `src/qa.py` contact sheet (2000 px): playable hillshade with water tint and
   section lines, world hillshade with footprint, slope classes (one-hue ramp + water), two centre
   cross-sections, text panel led by the height scale. Written by make_map.py as `<name>_qa.png`. DONE.
-- Stage 5: CLI polish + manifest (mostly done in Stage 3; add source URLs, --help review).
+- Stage 5 (2026-09-05): CLI polish. `--water-surface` override, `--bbox`/`--center` accept
+  leading-negative values (argparse fold), manifest gains `sources` (URLs, cache paths) and `run`
+  (argv, timestamp, git commit). Slope/buildability now computed on **in-game** metres so
+  exaggeration changes it (x1.0: 50.6 %, x1.3: 44.7 %). README.md added. DONE.
+  Variants built: `chatt_sea200` (bbox form, river at 200 m, scale 750), `chatt_x13` (scale 790).
 - Stage 6: resource masks (NLCD, gSSURGO, MRDS). Stage 4: QA sheet. Stage 5: CLI. Stage 6: resources.

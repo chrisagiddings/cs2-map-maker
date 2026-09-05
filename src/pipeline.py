@@ -27,6 +27,7 @@ from .terrain import block_downsample, fill_nodata, terracing_fraction, deterrac
 class PipelineParams:
     exaggeration: float = 1.0
     sea_level_m: float | None = None       # in-game elevation of the reference water surface
+    water_surface_real_m: float | None = None   # override the detected reference water surface (source datum metres)
     oversample: str | int = "auto"
     deterrace: str = "auto"                # auto | on | off
     burn: bool = True
@@ -57,8 +58,14 @@ def run(site: Site, p: PipelineParams, *, progress=print) -> Result:
     over = (2 if info.finest_ground_m < 2.5 else 1) if p.oversample == "auto" else int(p.oversample)
     stats["dem_source"] = {"finest_ground_m": info.finest_ground_m, "finest_name": info.finest_name,
                            "datasets": info.datasets, "playable_oversample": over}
-    play_raw, play_tf, _ = fetch_dem(site, site.playable_bbox, spec.PLAYABLE_M_PER_PX / over, label="playable", progress=progress)
-    world_raw, world_tf, _ = fetch_dem(site, site.world_bbox, spec.WORLD_M_PER_PX, label="world", progress=progress)
+    play_raw, play_tf, play_path = fetch_dem(site, site.playable_bbox, spec.PLAYABLE_M_PER_PX / over, label="playable", progress=progress)
+    world_raw, world_tf, world_path = fetch_dem(site, site.world_bbox, spec.WORLD_M_PER_PX, label="world", progress=progress)
+    from .fetch import DEM_SERVICE, NHD_SERVICE, NHD_LAYERS
+    stats["sources"] = {
+        "elevation": {"service": f"{DEM_SERVICE}/exportImage", "vertical_datum": "NAVD88 (3DEP)",
+                      "playable_cache": str(play_path), "world_cache": str(world_path)},
+        "hydrography": {"service": NHD_SERVICE, "layers": NHD_LAYERS},
+    }
     play_raw, f1 = fill_nodata(play_raw)
     world_raw, f2 = fill_nodata(world_raw)
     stats["nodata_filled_fraction"] = {"playable": f1, "world": f2}
@@ -90,7 +97,9 @@ def run(site: Site, p: PipelineParams, *, progress=print) -> Result:
 
     # reference water surface: the largest water polygon in the playable area,
     # else the median DEM value along the highest-order flowline, else the playable minimum
-    if layers_p.polygons:
+    if p.water_surface_real_m is not None:
+        water_ref, water_ref_desc = float(p.water_surface_real_m), "--water-surface override"
+    elif layers_p.polygons:
         ref = layers_p.polygons[0]
         water_ref, water_ref_desc = ref["surface_p10_m"], f"{ref['name']} (order {ref['order']}, {ref['area_km2']} km2) p10 surface"
     elif layers_p.mask.any():
@@ -122,7 +131,8 @@ def run(site: Site, p: PipelineParams, *, progress=print) -> Result:
     stats["world_center_mean_abs_diff_before_replace_m"] = seam_before
 
     # ---- stats -----------------------------------------------------------------
-    slope = slope_percent(play_b, spec.PLAYABLE_M_PER_PX)
+    # slope in in-game metres, so exaggeration changes buildability the way the player feels it
+    slope = slope_percent(play_m, spec.PLAYABLE_M_PER_PX)
     build_land = buildable_fraction(slope, exclude=layers_p.mask)
     build_all = buildable_fraction(slope)
     pr = play_b[np.isfinite(play_b)]
