@@ -57,11 +57,8 @@ def main(argv=None) -> int:
     res.stats["outputs"] = {"heightmap": hm.as_dict(), "worldmap": wm.as_dict()}
     (out / f"{a.name}_manifest.json").write_text(json.dumps(res.stats, indent=1, default=str))
 
-    try:
-        from src.qa import contact_sheet
-        contact_sheet(res, out / f"{a.name}_qa.png")
-    except ImportError:
-        pass
+    from src.qa import contact_sheet
+    qa_path = contact_sheet(res, out / f"{a.name}_qa.png")
 
     v = res.stats["vertical"]
     pl = res.stats["playable"]
@@ -75,6 +72,7 @@ def main(argv=None) -> int:
     print(f"  pixel range: heightmap {pl['px_min']}..{pl['px_max']}, worldmap {res.stats['world']['px_min']}..{res.stats['world']['px_max']}  "
           f"(1 level = {v['m_per_level'] * 100:.1f} cm)")
     print(f"  source DEM: ~{res.stats['dem_source']['finest_ground_m']} m ({res.stats['dem_source']['finest_name']})")
+    print(f"  QA sheet: {qa_path}")
     print(f"  outputs in {out}/  ({res.stats['elapsed_s']} s)")
     return 0
 

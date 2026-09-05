@@ -116,4 +116,8 @@ good LiDAR, big meandering river to prove channel burning).
   - Height scale = ceil(union max * 1.02 / 10) * 10. World centre 1024² is overwritten by the
     downsampled playable after quantization (seam before overwrite was 0.39 m mean).
   - Terracing: fraction of integer-valued pixels > 0.5 triggers deterrace. LiDAR sites (0.02) skip it.
-- Stage 4: QA contact sheet (`src/qa.py`, hooked in make_map.py already). Stage 4: QA sheet. Stage 5: CLI. Stage 6: resources.
+- Stage 4 (2026-09-05): `src/qa.py` contact sheet (2000 px): playable hillshade with water tint and
+  section lines, world hillshade with footprint, slope classes (one-hue ramp + water), two centre
+  cross-sections, text panel led by the height scale. Written by make_map.py as `<name>_qa.png`. DONE.
+- Stage 5: CLI polish + manifest (mostly done in Stage 3; add source URLs, --help review).
+- Stage 6: resource masks (NLCD, gSSURGO, MRDS). Stage 4: QA sheet. Stage 5: CLI. Stage 6: resources.
