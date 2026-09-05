@@ -1,7 +1,7 @@
 ## Goal
 
 Add a `publish` command that commits a finished map into the companion repo
-[`cs2-map-maker-maps`](https://github.com/chrisgiddings/cs2-map-maker-maps) so every
+[`cs2-map-maker-maps`](https://github.com/chrisagiddings/cs2-map-maker-maps) so every
 map the pipeline produces is versioned, browsable, and shareable without re-running the pipeline.
 
 ```
