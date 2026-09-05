@@ -11,9 +11,12 @@ Goal is maps that look convincing to CS2 players, not a one-off script.
   vertical + channel params; NOT the pipeline commit), writes a per-map README, regenerates the
   index table in the maps README, commits and pushes. `src/publish.py`, issue #1 (closed).
 - Open issues: #2 LFS, #3 display name, #4 gallery, #5 water-source hints, #6 coastal, #7 dup
-  detection, #8 Stage 6 resource masks.
+  detection, #8 Stage 6 resource masks, #9 **epic** placement-guide sheet (#11 canvas/symbols
+  first, then #12 water sources, #13 resources, #14 connections/utilities), #10 capture finished
+  CS2 maps (.cok + .cok.cid from `LocalLow\Colossal Order\Cities Skylines II\Maps\`).
+  Issue drafts live in `.github/issues/`.
 - GitHub CLI: `C:\Program Files\GitHub CLI\gh.exe`, logged in as chrisagiddings. Git identity is
-  set per-repo (not globally). git-lfs 3.7 is available.
+  set globally. git-lfs 3.7 is available.
 
 ## Environment
 - Windows 11, no admin. Python via **uv** (`C:\Users\Client\.local\bin\uv.exe`).
