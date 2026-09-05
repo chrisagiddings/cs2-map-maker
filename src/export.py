@@ -89,9 +89,12 @@ def verify_heightmap(path: str | os.PathLike, *, min_span: int = 1000) -> Height
     path = Path(path)
     if not path.exists():
         raise ExportError(f"{path}: file does not exist")
-    with Image.open(path) as im:
-        mode = im.mode
-        arr = np.array(im)
+    try:
+        with Image.open(path) as im:
+            mode = im.mode
+            arr = np.array(im)
+    except Exception as e:                      # UnidentifiedImageError, truncated file, ...
+        raise ExportError(f"{path}: not a readable image ({e})") from e
     if arr.ndim != 2:
         raise ExportError(f"{path}: expected single-channel image, got mode={mode!r} shape={arr.shape}")
     if arr.shape != (spec.HEIGHTMAP_SIZE, spec.HEIGHTMAP_SIZE):

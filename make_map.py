@@ -18,6 +18,7 @@ from src.normalize import NormalizeError
 from src.export import ExportError, write_heightmap
 from src.pipeline import PipelineParams, run
 from src.hydro import HydroParams
+from src.publish import PublishError
 
 
 def parse_args(argv=None):
@@ -42,6 +43,9 @@ def parse_args(argv=None):
     ap.add_argument("--depth-scale", type=float, default=1.0, help="multiplier on all channel depths (default 1.0)")
     ap.add_argument("--epsg", type=int, default=None, help="override the working metric CRS (default: local UTM zone)")
     ap.add_argument("--out", default="out", help="output root; files go to <out>/<name>/ (default: out)")
+    ap.add_argument("--publish", action="store_true", help="after building, commit the map to the cs2-map-maker-maps repo and push")
+    ap.add_argument("--maps-repo", default=None, help="maps repo checkout for --publish (default: $CS2_MAPS_REPO, else ../cs2-map-maker-maps)")
+    ap.add_argument("--no-push", action="store_true", help="with --publish: commit locally only")
     return ap.parse_args(_join_negative_values(sys.argv[1:] if argv is None else list(argv)))
 
 
@@ -110,12 +114,16 @@ def main(argv=None) -> int:
     print(f"  source DEM: ~{res.stats['dem_source']['finest_ground_m']} m ({res.stats['dem_source']['finest_name']})")
     print(f"  QA sheet: {qa_path}")
     print(f"  outputs in {out}/  ({res.stats['elapsed_s']} s)")
+    if a.publish:
+        from src.publish import publish
+        r = publish(out, a.maps_repo, push=not a.no_push)
+        print(f"  published: {r.folder}  commit {r.commit}  pushed={r.pushed}")
     return 0
 
 
 if __name__ == "__main__":
     try:
         sys.exit(main())
-    except (FetchError, NormalizeError, ExportError) as e:
+    except (FetchError, NormalizeError, ExportError, PublishError) as e:
         print(f"\nERROR: {e}", file=sys.stderr)
         sys.exit(2)

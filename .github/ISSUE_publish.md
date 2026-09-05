@@ -21,7 +21,7 @@ Chattanooga - a4f662m/
 ├── Chattanooga_worldmap.png       # 4096² 16-bit world map
 ├── Chattanooga_qa.png             # QA contact sheet
 ├── Chattanooga_manifest.json      # full run record (bbox, CRS, height scale, sources, stats)
-└── resources/                     # once Stage 6 lands: ore.png, oil.png, fertile.png, water.png (256²)
+└── resources/                     # once #8 lands: ore.png, oil.png, fertile.png, water.png (256²)
 ```
 
 ## Folder naming: `{City name} - {short-hash}`
@@ -34,60 +34,43 @@ change that alters the terrain creates a new folder:
 - centre lat/lon (rounded to 1e-4), EPSG
 - exaggeration, sea level, water-surface override
 - burn on/off, min stream order, depth scale, deterrace mode, oversample
-- pipeline version (git commit of `cs2-map-maker`) - optional, see open question
 
 `hash = sha1(canonical JSON of the above)[:7]`. The manifest already records every one of
-these under `params` and `run`, so the hash can be computed from the manifest alone.
+these under `params` and `site`, so the hash is computed from the manifest alone.
 
-The `name` part is taken from `--name` with the first letter capitalised and underscores
-turned into spaces; the hash makes collisions between "Chattanooga", "chattanooga" and
-"Chattanooga_v2" impossible.
+The name part is taken from `--name` with underscores turned into spaces and words
+capitalised, until #3 adds a proper display name. The hash makes collisions between
+"Chattanooga", "chattanooga" and "Chattanooga_v2" impossible.
 
-## Implementation sketch
+## Decisions
+
+- **The pipeline's git commit is not part of the hash.** Including it would move every map
+  into a new folder on each code change. Instead it is recorded in the manifest and the
+  per-map README, so `git log` on a folder shows how the map evolved as the pipeline improved.
+- **Display name** comes from the slug for now; reverse-geocoding is #3.
+
+## Implementation
 
 1. `src/publish.py`
    - `map_hash(manifest) -> str`
-   - `folder_name(name, manifest) -> str`
-   - `publish(out_dir, maps_repo_path, *, message=None, push=True)`:
-     clone or pull the maps repo (default `../cs2-map-maker-maps`, overridable with
-     `--maps-repo` / `CS2_MAPS_REPO`), copy the files, write the per-map `README.md`,
-     regenerate the top-level `README.md` index (table: folder, centre, height scale, buildable %,
-     QA thumbnail), `git add`, commit with a message like
+   - `folder_name(manifest) -> str`
+   - `publish(out_dir, maps_repo, *, message=None, push=True, dry_run=False)`:
+     verify the maps repo is a git checkout with a clean tree, copy the files, write the
+     per-map `README.md`, regenerate the index table in the top-level `README.md` from all
+     folders' manifests, `git add`, commit with a message like
      `chattanooga a4f662m: scale 610 m, sea 63 m, x1.0`, push.
 2. `publish_map.py` thin CLI; `--publish` flag on `make_map.py` that calls it after the QA sheet.
+   Maps repo location: `--maps-repo`, else `CS2_MAPS_REPO`, else `../cs2-map-maker-maps`.
 3. Refuse to publish if the manifest's `outputs` block is missing or the heightmap fails
-   `verify_heightmap` - never commit a bad PNG.
-4. Tests: hash stability (same params -> same hash; any param change -> different hash),
-   folder naming, README index generation on a temp repo.
+   `verify_heightmap`. Never commit a bad PNG.
+4. Tests: hash stability (same params -> same hash; any listed param change -> different
+   hash; unrelated changes such as `--out` do not change it), folder naming, index generation
+   on a temp repo, refusal on a bad heightmap.
 
-## Repo size
+## Related
 
-Each map is ~50-70 MB of 16-bit PNGs. GitHub's soft limit is 1 GB per repo, so the maps repo
-holds ~15 maps before it gets awkward. Options, in order of preference:
-
-- **Git LFS for `*.png`** in the maps repo (`git lfs track "*.png"`). Free tier is 1 GB storage /
-  1 GB bandwidth per month; fine for a personal collection, and the repo stays fast to clone.
-- Keep only the heightmap + worldmap under LFS and commit QA sheets / manifests as normal files
-  so the browsable part stays cheap.
-- Publish a GitHub Release per map with the PNGs as assets, committing only manifest + QA sheet.
-
-## Open questions
-
-- Should the pipeline version be part of the hash? Including it means a code change
-  re-publishes every map into new folders; excluding it means an improved burn silently
-  overwrites the old map. Suggest: exclude from the hash, but record it in the manifest and
-  write it into the folder README so the history is visible via git log.
-- Naming when `--name` is an arbitrary slug rather than a city: fall back to reverse-geocoding
-  the centre (Nominatim, no key) to get a city name, with `--display-name` to override.
-
-## Further improvements worth their own issues
-
-- **Stage 6 resource masks** (NLCD, gSSURGO, MRDS) - already planned.
-- **Map gallery**: a static page generated from the maps repo index (GitHub Pages) showing each
-  QA sheet with its numbers, so maps can be picked visually.
-- **`--water-source-hints`**: emit the edge pixels where order >= 6 flowlines enter/leave the
-  playable area, with their in-game elevations, so river water sources can be placed in the
-  editor without guesswork.
-- **Coastal support**: NOAA CUDEM bathymetry merge when the world extent touches the sea.
-- **Re-run detection**: `make_map.py` warns when an identical configuration is already in the
-  maps repo and offers to skip.
+- #2 Git LFS for the PNGs in the maps repo (publish should warn when LFS is not set up)
+- #3 display name via `--display-name` / reverse geocode
+- #4 GitHub Pages gallery generated from the maps repo
+- #7 detect an already-published configuration before building
+- #8 resource masks land in `resources/` and are copied by publish
