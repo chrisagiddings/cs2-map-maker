@@ -1,0 +1,22 @@
+[
+ {"slug": "chattanooga", "name": "Chattanooga", "country": "US", "lat": 35.0456, "lon": -85.3097,
+  "tags": ["baseline", "lidar", "big-river"], "notes": "0.8 m LiDAR, order-9 Tennessee River, 485 m relief"},
+ {"slug": "park_city", "name": "Park City", "country": "US", "lat": 40.6461, "lon": -111.4980,
+  "tags": ["high-relief", "high-altitude", "no-big-river"], "notes": "2,100 m base, ~1,000 m playable relief, ski terrain"},
+ {"slug": "cheyenne", "name": "Cheyenne", "country": "US", "lat": 41.1400, "lon": -104.8202,
+  "tags": ["flat", "no-big-river", "scale-floor"], "notes": "high plains, tiny creeks, height scale at the 200 m floor"},
+ {"slug": "chisinau", "name": "Chisinau", "country": "MD", "lat": 47.0105, "lon": 28.8638,
+  "tags": ["rolling", "cop30-only", "upsample"], "notes": "30 m global DEM only, small river (Bic)"},
+ {"slug": "lviv", "name": "Lviv", "country": "UA", "lat": 49.8397, "lon": 24.0297,
+  "tags": ["culverted-river", "utm-zone-boundary", "cop30-only"], "notes": "Poltva runs underground; world extent crosses 24 E"},
+ {"slug": "uji", "name": "Uji", "country": "JP", "lat": 34.8845, "lon": 135.7997,
+  "tags": ["dense-urban", "steep-hills", "national-dtm"], "notes": "GSI 5/10 m DTM available (local source), Uji River with weirs"},
+ {"slug": "pune", "name": "Pune", "country": "IN", "lat": 18.5204, "lon": 73.8567,
+  "tags": ["plateau", "dsm-artefacts", "dams-upstream"], "notes": "Mula/Mutha rivers, monsoon regime, Deccan hills"},
+ {"slug": "bogota", "name": "Bogota", "country": "CO", "lat": 4.7110, "lon": -74.0721,
+  "tags": ["high-altitude", "high-relief", "near-equator", "dsm-artefacts"], "notes": "2,600 m plateau against a 3,600 m cordillera"},
+ {"slug": "lagos", "name": "Lagos", "country": "NG", "lat": 6.5244, "lon": 3.3792,
+  "tags": ["coastal", "lagoon", "dsm-artefacts", "needs-bathymetry"], "notes": "lagoon + Atlantic, near sea level, needs #6"},
+ {"slug": "turin", "name": "Turin", "country": "IT", "lat": 45.0703, "lon": 7.6869,
+  "tags": ["flat-city", "confluence", "alpine-world", "national-dtm"], "notes": "Po / Dora Riparia confluence, TINITALY 10 m available (local source)"}
+]

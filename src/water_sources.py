@@ -33,6 +33,8 @@ class WaterSourceParams:
     max_streams: int = 8
     lake_min_km2: float = 0.5
     merge_m: float = 150.0          # crossings of the same river closer than this are one crossing
+    cluster_m: float = 400.0        # parallel channels crossing within this, same direction -> one source
+    loop_m: float = 150.0           # an in/out pair closer than this is a meander nicking the edge: drop both
     sample_px: int = 12             # neighbourhood radius for the surface level at a point
 
 
@@ -94,6 +96,35 @@ def _crossings(line: LineString, ring, poly, step_m: float = 30.0):
     return out
 
 
+def _dedupe_crossings(found: list, p: "WaterSourceParams") -> list:
+    """Parallel channels (OSM side arms, canals, braids) cross the edge within a few hundred
+    metres of each other and all carry the main river's order. Keep one crossing per direction
+    per cluster (named first, then the biggest drainage), and drop in/out pairs closer than
+    `loop_m` (a meander that nicks the boundary)."""
+    if len(found) < 2:
+        return found
+    def name_ok(row):
+        g = row.get("gnis_name")
+        return g is not None and str(g) != "nan"
+    kept = []
+    used = [False] * len(found)
+    for i, (pt, inflow, row) in enumerate(found):
+        if used[i]:
+            continue
+        cluster = [j for j in range(len(found)) if not used[j] and found[j][1] == inflow
+                   and found[j][0].distance(pt) <= p.cluster_m]
+        for j in cluster:
+            used[j] = True
+        best = max(cluster, key=lambda j: (name_ok(found[j][2]), float(found[j][2].get("totdasqkm") or 0)))
+        kept.append(found[best])
+    out = []
+    for i, (pt, inflow, row) in enumerate(kept):
+        partner = any(k != i and kept[k][1] != inflow and kept[k][0].distance(pt) <= p.loop_m for k in range(len(kept)))
+        if not partner:
+            out.append((pt, inflow, row))
+    return out
+
+
 def propose_water_sources(flow, area, wb, site, transform, *, surface_real: np.ndarray, dem_real: np.ndarray,
                           water_mask: np.ndarray, vertical, p: WaterSourceParams | None = None,
                           progress=print) -> list[Placement]:
@@ -114,6 +145,8 @@ def propose_water_sources(flow, area, wb, site, transform, *, surface_real: np.n
 
     placements: list[Placement] = []
     fl = flow[flow["streamorde"].notna()].copy()
+    if "culvert" in fl.columns:
+        fl = fl[~fl["culvert"].fillna(False).astype(bool)]      # underground rivers get no source
     fl["streamorde"] = fl["streamorde"].astype(int)
     near = fl[fl.intersects(ring)]
 
@@ -128,6 +161,7 @@ def propose_water_sources(flow, area, wb, site, transform, *, surface_real: np.n
                        [(f[0], f[1], f[2].get("levelpathi")) for f in found]):
                     continue
                 found.append((pt, inflow, row))
+    found = _dedupe_crossings(found, p)
     for pt, inflow, row in found:
         c, r, side = _snap_edge(_to_px(transform, pt.x, pt.y))
         lv = level((c, r))

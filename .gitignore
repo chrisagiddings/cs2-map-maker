@@ -1,6 +1,9 @@
-﻿.venv/
+.venv/
 data/raw/
 out/
 __pycache__/
 *.pyc
 *.aux.xml
+data/local/*
+!data/local/README.md
+!data/local/sources.example.json

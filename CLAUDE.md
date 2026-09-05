@@ -62,6 +62,33 @@ Trap: Pillow's `I;16` PNG writing is quirky. Every export must be read back with
 independent reader and asserted: shape (4096, 4096), dtype uint16, value range spans data.
 (Verified: rasterio/GDAL write → Pillow read round-trips uint16 correctly.)
 
+## Source layers (#16, #17; 2026-09-05)
+- `src/elevation.py`: `resolve_elevation(site, bbox)` = finest DTM covering the extent, else finest
+  DSM. Sources: `3dep` (US, catalog query cached in `data/raw/dem_catalog`), `local:<name>`
+  (user GeoTIFFs declared in `data/local/sources.json`, for GSI/TINITALY/EU-DTM behind
+  registration), `cop30` (Copernicus GLO-30 DSM, public AWS bucket, tiles cached in
+  `data/raw/cop30`, missing tile = ocean = 0 m EGM2008). Resampling policy in `DemMeta.resample`:
+  native <= target/2 fetch fine + block-average; <= target bilinear; > target cubic spline.
+  `--dem-source` forces one. Playable and world may come from different sources
+  (`dem_source.mixed_sources`; offset correction is #18).
+- `src/hydro_sources.py`: `resolve_hydro()` = NHD when 3DEP covers the site, else OSM.
+  `OsmSource`: Overpass (waterway=river|stream|canal|drain|ditch, natural=water ways+relations,
+  coastline) cached in `data/raw/osm`; HydroRIVERS per region cached in `data/raw/hydrorivers`
+  (region from lat/lon); order = **NHD-equivalent order from drainage area** (`order_from_area`,
+  calibrated on Chattanooga), Strahler kept in `strahler`; discharge `DIS_AV_CMS` in
+  `discharge_cms` drives channel width/depth by hydraulic geometry (w = 4.8 sqrt(Q), d = 0.35 Q^0.3)
+  where present; direction from OSM vertex order, flipped when the DEM disagrees by > 1 m,
+  `flowdir` 0 when < 0.5 m; `culvert` (tunnel/culvert/covered) rows are never burned and never
+  get sources; `intermittent` burns at half depth; sea polygon from DEM <= 0.5 m touching the
+  edge when a coastline way exists. Matching to HydroRIVERS uses the way's mid-body (25/50/75 %
+  points within 300 m) so tributary mouths do not inherit the main river's order.
+- Reference water surface = highest-order water in the playable (polygon crossed by the top
+  order, else p10 surface along top-order flowlines), never simply the largest pond.
+- Border-river crossings: parallel channels within 400 m (same direction) collapse to one;
+  in/out pairs within 150 m (a meander nicking the edge) are dropped.
+- `bench/sites.json` + `make_map.py --site <slug>`. Chisinau builds from cop30 + osm in ~50 s.
+- Cache sidecars are now `<key>.meta.json` (a `.json` blob used to be overwritten by its own meta).
+
 ## Data sources (free)
 - **Elevation (primary):** USGS 3DEP ImageServer, no key —
   `https://elevation.nationalmap.gov/arcgis/rest/services/3DEPElevation/ImageServer/exportImage`

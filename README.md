@@ -36,11 +36,15 @@ in the console banner (also in the QA sheet and manifest).
 ## How it works
 
 1. Site centre → local UTM zone → exact 14.336 km and 57.344 km footprints (`src/geo.py`).
-2. USGS 3DEP is fetched **in UTM at the target pixel size** (no resampling in degrees),
-   tiled and cached under `data/raw/` (`src/fetch.py`, `src/cache.py`).
+   `--site <slug>` picks one of the benchmark sites in `bench/sites.json`.
+2. Elevation comes from the finest terrain model covering the site (`src/elevation.py`):
+   USGS 3DEP in the US (1 m LiDAR where it exists), your own national DTMs dropped into
+   `data/local/`, or Copernicus GLO-30 anywhere on Earth. Everything is warped **in UTM at the
+   target pixel size** (never resampled in degrees) and cached under `data/raw/`.
 3. Integer-metre sources are de-terraced with an edge-preserving filter (`src/terrain.py`).
-4. NHDPlus HR polygons and flowlines carve river beds below the DEM's water surface,
-   width and depth keyed to stream order (`src/hydro.py`).
+4. Rivers come from NHDPlus HR in the US and from OpenStreetMap + HydroRIVERS elsewhere
+   (`src/hydro_sources.py`); polygons and flowlines carve beds below the DEM's water surface,
+   sized by stream order or by discharge where it is known (`src/hydro.py`).
 5. One vertical transform for both maps: reference water surface, sea level,
    exaggeration, one height scale (`src/normalize.py`).
 6. The world map centre is overwritten with the downsampled playable map, both are

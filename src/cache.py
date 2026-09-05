@@ -41,5 +41,6 @@ class Cache:
         tmp.write_bytes(data)
         tmp.replace(p)
         meta = dict(meta, bytes=len(data), cached_at=time.strftime("%Y-%m-%dT%H:%M:%S"))
-        p.with_suffix(".json").write_text(json.dumps(meta, indent=1, default=str))
+        # sidecar must never collide with the blob itself (a .json blob would be overwritten)
+        p.with_name(f"{key}.meta.json").write_text(json.dumps(meta, indent=1, default=str))
         return p

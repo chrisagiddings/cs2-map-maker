@@ -89,6 +89,31 @@ def test_propose_water_sources():
     assert any("proposed 6 water sources" in l for l in log)
 
 
+def test_parallel_channels_and_edge_nick_are_deduped():
+    site = _site()
+    bb = site.playable_bbox
+    tf = from_origin(bb.minx, bb.maxy, 3.5, 3.5)
+    x0, y0, x1, y1 = bb.as_tuple()
+    cx = (x0 + x1) / 2
+    # main river + two unnamed parallel side channels all leaving the S edge within 300 m
+    main = LineString([(cx, y0 + 2000), (cx, y0 - 2000)])
+    side1 = LineString([(cx + 150, y0 + 2000), (cx + 150, y0 - 2000)])
+    side2 = LineString([(cx - 250, y0 + 2000), (cx - 250, y0 - 2000)])
+    # a meander that nicks the E edge: out and back in within 80 m
+    nick = LineString([(x1 - 500, cx), (x1 + 30, cx + 40), (x1 - 500, cx + 80)])
+    flow = gpd.GeoDataFrame({"gnis_name": ["Big", None, None, "Nick"], "streamorde": [7, 7, 7, 7], "flowdir": [1] * 4,
+                             "levelpathi": [1, 2, 3, 4], "hydroseq": [1, 1, 1, 1], "startflag": [0] * 4,
+                             "totdasqkm": [5000.0, 5000.0, 5000.0, 5000.0]},
+                            geometry=[main, side1, side2, nick], crs=site.epsg)
+    empty = gpd.GeoDataFrame({"gnis_name": [], "ftype": []}, geometry=[], crs=site.epsg)
+    v = Vertical(193.0, 63.0, 0.0, 1.0, 610.0, 5.0, 596.0, 0.0093)
+    ps = propose_water_sources(flow, empty, empty, site, tf, surface_real=np.full((N, N), np.nan, np.float32),
+                               dem_real=np.full((N, N), 200.0, np.float32), water_mask=np.zeros((N, N), bool),
+                               vertical=v, p=WaterSourceParams(), progress=lambda *_: None)
+    borders = [p for p in ps if p.kind.startswith("water.border_river")]
+    assert len(borders) == 1 and borders[0].kind == "water.border_river_out" and "Big" in borders[0].label
+
+
 def test_stream_cap_and_direction_confidence():
     site = _site()
     bb = site.playable_bbox

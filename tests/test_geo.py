@@ -61,4 +61,7 @@ def test_cache_roundtrip(tmp_path):
     assert c.get("src", k, "bin") is None
     p = c.put("src", k, "bin", b"hello", {"url": "u"})
     assert c.get("src", k, "bin") == p and p.read_bytes() == b"hello"
-    assert (tmp_path / "src" / f"{k}.json").exists()
+    assert (tmp_path / "src" / f"{k}.meta.json").exists()
+    # a .json blob must not be clobbered by its own sidecar
+    p2 = c.put("src", "abc", "json", b'{"elements": [1]}', {"url": "u"})
+    assert p2.read_bytes() == b'{"elements": [1]}' and (tmp_path / "src" / "abc.meta.json").exists()

@@ -1,0 +1,4 @@
+[
+ {"name": "gsi_10m", "product": "GSI Fundamental Geospatial Data 10 m", "files": ["data/local/gsi/*.tif"],
+  "kind": "dtm", "native_m": 10, "vertical_datum": "JGD2011 orthometric", "nodata": -9999}
+]

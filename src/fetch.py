@@ -81,16 +81,25 @@ class DemSourceInfo:
     datasets: list[str]
 
 
-def dem_source_info(site: Site, bbox: BBox, session: requests.Session | None = None) -> DemSourceInfo:
-    """Ask the 3DEP catalog what source datasets cover `bbox` and how fine they are."""
-    session = session or _session()
+def dem_source_info(site: Site, bbox: BBox, session: requests.Session | None = None,
+                    cache: Cache | None = None) -> DemSourceInfo:
+    """Ask the 3DEP catalog what source datasets cover `bbox` and how fine they are.
+    Cached on disk: the resolver asks for every extent on every run."""
+    cache = cache or Cache()
     w = site.bbox_wgs84(bbox)
-    r = _get(session, f"{DEM_SERVICE}/query", {
+    params = {
         "f": "json", "geometry": w.as_str(6), "geometryType": "esriGeometryEnvelope",
         "inSR": 4326, "spatialRel": "esriSpatialRelIntersects",
         "outFields": "Name,LowPS,Category,Dataset_ID", "returnGeometry": "false",
-    }, expect="json")
-    feats = [f["attributes"] for f in r.json().get("features", []) if f["attributes"].get("Category") == 1]
+    }
+    key = key_for("3dep-catalog", params)
+    path = cache.get("dem_catalog", key, "json")
+    if path is None:
+        session = session or _session()
+        r = _get(session, f"{DEM_SERVICE}/query", params, expect="json", timeout=120, retries=2)
+        path = cache.put("dem_catalog", key, "json", r.content, {"url": f"{DEM_SERVICE}/query", "params": params})
+    feats = [f["attributes"] for f in json.loads(path.read_text(encoding="utf-8")).get("features", [])
+             if f["attributes"].get("Category") == 1]
     if not feats:
         raise FetchError(f"3DEP catalog lists no elevation datasets intersecting {w.as_str(4)}")
     # LowPS is in Web Mercator metres; scale by cos(lat) for ground metres.

@@ -18,6 +18,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 import numpy as np
+import pandas as pd
 from rasterio import features
 from rasterio.transform import Affine
 from scipy import ndimage
@@ -80,8 +81,10 @@ def build_water_layers(dem: np.ndarray, transform: Affine, m_per_px: float, bbox
     h, w = dem.shape
     clip = box(*bbox.as_tuple())
 
-    # ---- flowlines in extent, order >= min --------------------------------
+    # ---- flowlines in extent, order >= min, never culverted -----------------
     fl = flow[flow["streamorde"].fillna(0) >= p.min_order]
+    if "culvert" in fl.columns:
+        fl = fl[~fl["culvert"].fillna(False).astype(bool)]
     fl = fl[fl.intersects(clip)].copy()
     fl["geometry"] = fl.geometry.intersection(clip)
     fl = fl[~fl.geometry.is_empty]
@@ -123,11 +126,23 @@ def build_water_layers(dem: np.ndarray, transform: Affine, m_per_px: float, bbox
     line_depth = np.zeros((h, w), np.float32)
     if len(fl):
         depth_shapes, half_shapes = [], []
-        for order, grp in fl.groupby("streamorde"):
-            o = int(order)
-            half = max(p.width(o) / 2.0, m_per_px * 0.5)   # at least ~1 px wide
+        fl = fl.assign(_w=np.array([p.width(int(o)) for o in fl["streamorde"]], dtype=float),
+                       _d=np.array([p.depth(int(o)) for o in fl["streamorde"]], dtype=float))
+        if "discharge_cms" in fl.columns:
+            # where a mean discharge is known (HydroRIVERS), size the channel by hydraulic geometry
+            # instead of the order table: a dry-climate river with a big basin is still small.
+            q = pd.to_numeric(fl["discharge_cms"], errors="coerce")
+            has = q.notna() & (q > 0)
+            fl.loc[has, "_w"] = np.maximum(3.0, 4.8 * np.sqrt(q[has]))
+            fl.loc[has, "_d"] = p.depth_scale * np.maximum(0.5, 0.35 * q[has] ** 0.3)
+        if "intermittent" in fl.columns:
+            fl.loc[fl["intermittent"].fillna(False).astype(bool), "_d"] *= 0.5     # intermittent: half depth
+        # group by rounded (width, depth) so buffering stays a handful of unions
+        fl["_w"] = fl["_w"].round(0); fl["_d"] = fl["_d"].round(1)
+        for (wm, dm), grp in fl.groupby(["_w", "_d"]):
+            half = max(float(wm) / 2.0, m_per_px * 0.5)   # at least ~1 px wide
             poly = grp.geometry.buffer(half, cap_style=2).union_all()
-            depth_shapes.append((poly, p.depth(o)))
+            depth_shapes.append((poly, float(dm)))
             half_shapes.append((poly, half / m_per_px))
         # rasterize shallow-first so the deeper (wider) order wins where they overlap
         depth_shapes.sort(key=lambda t: t[1])
@@ -163,6 +178,22 @@ def build_water_layers(dem: np.ndarray, transform: Affine, m_per_px: float, bbox
         report.append({"name": name, "ftype": ftype, "area_km2": round(a / 1e6, 3), "order": order,
                        "depth_m": round(d, 1), "surface_p10_m": round(p10, 2), "surface_p90_m": round(float(np.percentile(vals, 90)), 2) if vals.size else None})
     return WaterLayers(mask, poly_mask, surface, depth, report)
+
+
+def flowline_surface(dem: np.ndarray, transform: Affine, m_per_px: float, flow, bbox, order: int,
+                     *, buffer_m: float = 10.0, pct: float = 10.0) -> float | None:
+    """Low percentile of the DEM along flowlines of exactly `order` inside bbox, or None."""
+    clip = box(*bbox.as_tuple())
+    fl = flow[(flow["streamorde"].fillna(0) == order)]
+    if "culvert" in fl.columns:
+        fl = fl[~fl["culvert"].fillna(False).astype(bool)]
+    fl = fl[fl.intersects(clip)]
+    if fl.empty:
+        return None
+    geom = fl.geometry.intersection(clip).buffer(max(buffer_m, m_per_px)).union_all()
+    m = features.rasterize([(geom, 1)], out_shape=dem.shape, transform=transform, fill=0, dtype="uint8").astype(bool)
+    vals = dem[m & np.isfinite(dem)]
+    return float(np.percentile(vals, pct)) if vals.size else None
 
 
 def burn_channels(dem: np.ndarray, layers: WaterLayers) -> np.ndarray:

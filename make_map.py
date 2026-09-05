@@ -26,7 +26,10 @@ def parse_args(argv=None):
     g = ap.add_mutually_exclusive_group(required=True)
     g.add_argument("--center", help="lat,lon of the map centre")
     g.add_argument("--bbox", help="minx,miny,maxx,maxy in degrees; only its centre is used (CS2 footprint is fixed)")
-    ap.add_argument("--name", required=True, help="output name -> out/<name>/")
+    g.add_argument("--site", help="a benchmark site slug from bench/sites.json (sets centre and default name)")
+    ap.add_argument("--name", default=None, help="output name -> out/<name>/ (default: the --site slug)")
+    ap.add_argument("--dem-source", default=None, help="force an elevation source: 3dep, cop30, local:<name> (default: finest DTM covering the site)")
+    ap.add_argument("--hydro-source", choices=["nhd", "osm"], default=None, help="force the hydrography source (default: nhd in the US, osm elsewhere)")
     ap.add_argument("--exaggeration", type=float, default=1.0, help="vertical exaggeration about the water surface (default 1.0)")
     ap.add_argument("--sea-level", type=float, default=None,
                     help="in-game elevation (m above pixel 0) of the reference water surface. "
@@ -76,14 +79,30 @@ def _git_commit() -> str | None:
 
 def main(argv=None) -> int:
     a = parse_args(argv)
-    if a.center:
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")     # place names are not cp1252
+    except Exception:
+        pass
+    if a.site:
+        sites = {s["slug"]: s for s in json.loads((Path(__file__).parent / "bench" / "sites.json").read_text(encoding="utf-8"))}
+        if a.site not in sites:
+            raise SystemExit(f"unknown --site {a.site!r}; known: {', '.join(sorted(sites))}")
+        s = sites[a.site]
+        a.name = a.name or a.site
+        site = Site.from_center(a.name, s["lat"], s["lon"], a.epsg)
+    elif a.center:
+        if not a.name:
+            raise SystemExit("--name is required with --center")
         lat, lon = map(float, a.center.split(","))
         site = Site.from_center(a.name, lat, lon, a.epsg)
     else:
+        if not a.name:
+            raise SystemExit("--name is required with --bbox")
         site = Site.from_bbox_wgs84(a.name, *map(float, a.bbox.split(",")), epsg=a.epsg)
     p = PipelineParams(exaggeration=a.exaggeration, sea_level_m=a.sea_level, water_surface_real_m=a.water_surface,
                        oversample=a.oversample, deterrace=a.deterrace, burn=not a.no_burn,
-                       hydro=HydroParams(min_order=a.min_order, depth_scale=a.depth_scale))
+                       hydro=HydroParams(min_order=a.min_order, depth_scale=a.depth_scale),
+                       dem_source=a.dem_source, hydro_source=a.hydro_source)
     out = Path(a.out) / a.name
     out.mkdir(parents=True, exist_ok=True)
 
@@ -117,7 +136,10 @@ def main(argv=None) -> int:
     print(f"  buildable (<10% slope): {pl['buildable_fraction_land']:.1%} of land, {pl['buildable_fraction_all']:.1%} of all")
     print(f"  pixel range: heightmap {pl['px_min']}..{pl['px_max']}, worldmap {res.stats['world']['px_min']}..{res.stats['world']['px_max']}  "
           f"(1 level = {v['m_per_level'] * 100:.1f} cm)")
-    print(f"  source DEM: ~{res.stats['dem_source']['finest_ground_m']} m ({res.stats['dem_source']['finest_name']})")
+    ds = res.stats["dem_source"]
+    print(f"  source DEM: ~{ds['finest_ground_m']} m {ds['kind'].upper()} ({ds['finest_name']}, {ds['resample']})"
+          + (f"; world from {ds['world']['source']}" if ds.get("mixed_sources") else "")
+          + f"; hydrography: {res.stats['hydro_source']['id']}")
     print(f"  QA sheet: {qa_path}")
     print(f"  guide:    {guide_path}  ({len(res.placements)} placements)")
     ws = [pl for pl in res.placements if pl.kind.startswith("water.")]

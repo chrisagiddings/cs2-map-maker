@@ -16,11 +16,12 @@ import numpy as np
 
 from . import spec
 from .export import downsample_playable_to_world, worldmap_center_slice, check_worldmap_center
-from .fetch import fetch_dem, fetch_nhd, dem_source_info, FLOWLINE_FIELDS
+from .elevation import resolve_elevation
 from .geo import Site
-from .hydro import HydroParams, build_water_layers, burn_channels
+from .hydro_sources import resolve_hydro
+from .hydro import HydroParams, build_water_layers, burn_channels, flowline_surface
 from .normalize import plan_vertical, apply_vertical, to_uint16
-from .terrain import block_downsample, fill_nodata, terracing_fraction, deterrace, slope_percent, buildable_fraction
+from .terrain import fill_nodata, terracing_fraction, deterrace, slope_percent, buildable_fraction
 
 
 @dataclass
@@ -34,6 +35,8 @@ class PipelineParams:
     hydro: HydroParams = field(default_factory=HydroParams)
     floor_margin_m: float = 5.0
     water_sources: "WaterSourceParams | None" = None    # None -> defaults
+    dem_source: str | None = None          # force an elevation source id (3dep, cop30, local:<name>)
+    hydro_source: str | None = None        # force nhd or osm
 
 
 @dataclass
@@ -56,25 +59,31 @@ def run(site: Site, p: PipelineParams, *, progress=print) -> Result:
                                                        for k, v in asdict(p).items()}}
 
     # ---- 1. raw DEMs in metric CRS at exact pixel sizes --------------------
-    info = dem_source_info(site, site.playable_bbox)
-    over = (2 if info.finest_ground_m < 2.5 else 1) if p.oversample == "auto" else int(p.oversample)
-    stats["dem_source"] = {"finest_ground_m": info.finest_ground_m, "finest_name": info.finest_name,
-                           "datasets": info.datasets, "playable_oversample": over}
-    play_raw, play_tf, play_path = fetch_dem(site, site.playable_bbox, spec.PLAYABLE_M_PER_PX / over, label="playable", progress=progress)
-    world_raw, world_tf, world_path = fetch_dem(site, site.world_bbox, spec.WORLD_M_PER_PX, label="world", progress=progress)
+    # finest DTM covering each extent, else finest DSM (#16); playable and world may differ
+    src_p = resolve_elevation(site, site.playable_bbox, prefer=p.dem_source, progress=progress)
+    src_w = resolve_elevation(site, site.world_bbox, prefer=p.dem_source, progress=progress)
+    play_raw, play_tf, meta_p = src_p.fetch(site, site.playable_bbox, spec.PLAYABLE_M_PER_PX, label="playable",
+                                            oversample=p.oversample, progress=progress)
+    world_raw, world_tf, meta_w = src_w.fetch(site, site.world_bbox, spec.WORLD_M_PER_PX, label="world", progress=progress)
+    stats["dem_source"] = {
+        # flat keys kept for the QA sheet / publish README
+        "finest_ground_m": meta_p.native_m, "finest_name": meta_p.product, "datasets": meta_p.datasets,
+        "playable_oversample": meta_p.oversample, "kind": meta_p.kind, "source": meta_p.source,
+        "vertical_datum": meta_p.vertical_datum, "resample": meta_p.resample,
+        "playable": meta_p.as_dict(), "world": meta_w.as_dict(),
+        "mixed_sources": meta_p.source != meta_w.source,
+    }
+    if meta_p.kind == "dsm":
+        progress(f"[elevation] WARNING: {meta_p.product} is a surface model (buildings/trees included); DSM cleaning is issue #18")
     from .fetch import DEM_SERVICE, NHD_SERVICE, NHD_LAYERS
     stats["sources"] = {
-        "elevation": {"service": f"{DEM_SERVICE}/exportImage", "vertical_datum": "NAVD88 (3DEP)",
-                      "playable_cache": str(play_path), "world_cache": str(world_path)},
-        "hydrography": {"service": NHD_SERVICE, "layers": NHD_LAYERS},
+        "elevation": {"playable": meta_p.source, "world": meta_w.source,
+                      "3dep": f"{DEM_SERVICE}/exportImage", "cop30": "https://copernicus-dem-30m.s3.amazonaws.com"},
+        "hydrography": {"nhd": NHD_SERVICE, "nhd_layers": NHD_LAYERS, "osm": "Overpass API", "hydrorivers": "HydroSHEDS HydroRIVERS v1.0"},
     }
     play_raw, f1 = fill_nodata(play_raw)
     world_raw, f2 = fill_nodata(world_raw)
     stats["nodata_filled_fraction"] = {"playable": f1, "world": f2}
-    if over > 1:
-        play_raw = block_downsample(play_raw, over)
-        from rasterio.transform import from_origin
-        play_tf = from_origin(site.playable_bbox.minx, site.playable_bbox.maxy, spec.PLAYABLE_M_PER_PX, spec.PLAYABLE_M_PER_PX)
     assert play_raw.shape == (spec.HEIGHTMAP_SIZE,) * 2 and world_raw.shape == (spec.HEIGHTMAP_SIZE,) * 2
 
     # ---- 2. de-terrace ------------------------------------------------------
@@ -88,25 +97,38 @@ def run(site: Site, p: PipelineParams, *, progress=print) -> Result:
         progress(f"[terrain] no terracing detected (integer fraction playable={tf_play:.2f}, world={tf_world:.2f})")
 
     # ---- 3. hydrography + channel burning ----------------------------------
-    flow = fetch_nhd(site, site.world_bbox, "flowline", out_fields=FLOWLINE_FIELDS, progress=progress)
-    area = fetch_nhd(site, site.world_bbox, "area", out_fields="permanent_identifier,gnis_name,ftype,fcode,areasqkm", required=False, progress=progress)
-    wb = fetch_nhd(site, site.world_bbox, "waterbody", out_fields="permanent_identifier,gnis_name,ftype,fcode,areasqkm", required=False, progress=progress)
+    # NHD where 3DEP covers the site (US), OpenStreetMap + HydroRIVERS elsewhere (#17)
+    hsrc = resolve_hydro(site, prefer=p.hydro_source, us=(src_p.id == "3dep"), progress=progress)
+    flow, area, wb = hsrc.fetch(site, site.world_bbox, dem=(world_raw, world_tf), progress=progress)
+    stats["hydro_source"] = {"id": hsrc.id, "flowlines": int(len(flow)), "areas": int(len(area)), "waterbodies": int(len(wb)),
+                             "culverted": int(flow["culvert"].sum()) if "culvert" in flow else 0,
+                             "order_sources": {k: int(v) for k, v in flow["order_source"].value_counts().items()} if "order_source" in flow else {}}
 
     layers_p = build_water_layers(play_raw, play_tf, spec.PLAYABLE_M_PER_PX, site.playable_bbox, flow, area, wb, p.hydro, progress=progress)
     layers_w = build_water_layers(world_raw, world_tf, spec.WORLD_M_PER_PX, site.world_bbox, flow, area, wb, p.hydro, progress=progress)
     stats["water_polygons_playable"] = layers_p.polygons
     stats["water_fraction"] = {"playable": float(layers_p.mask.mean()), "world": float(layers_w.mask.mean())}
 
-    # reference water surface: the largest water polygon in the playable area,
-    # else the median DEM value along the highest-order flowline, else the playable minimum
+    # reference water surface: the HIGHEST-ORDER water in the playable area, not the largest
+    # pond. A polygon wins only if a flowline of the top order runs through it; otherwise the
+    # p10 surface along the top-order flowlines; otherwise the playable minimum.
+    from shapely.geometry import box as _box
+    in_play = flow[flow.intersects(_box(*site.playable_bbox.as_tuple()))]
+    if "culvert" in in_play.columns:
+        in_play = in_play[~in_play["culvert"].fillna(False).astype(bool)]
+    top_order = int(in_play["streamorde"].max()) if len(in_play) and in_play["streamorde"].notna().any() else 0
+    polys_top = [q for q in layers_p.polygons if q["order"] >= top_order and top_order >= p.hydro.min_order]
     if p.water_surface_real_m is not None:
         water_ref, water_ref_desc = float(p.water_surface_real_m), "--water-surface override"
+    elif polys_top:
+        ref = polys_top[0]
+        water_ref, water_ref_desc = ref["surface_p10_m"], f"{ref['name']} (order {ref['order']}, {ref['area_km2']} km2) p10 surface"
+    elif top_order >= p.hydro.min_order and (fs := flowline_surface(play_raw, play_tf, spec.PLAYABLE_M_PER_PX, flow, site.playable_bbox, top_order)) is not None:
+        names = sorted({str(n) for n in in_play.loc[in_play["streamorde"] == top_order, "gnis_name"].dropna()})[:3]
+        water_ref, water_ref_desc = fs, f"p10 surface along order-{top_order} flowlines ({', '.join(names) or 'unnamed'})"
     elif layers_p.polygons:
         ref = layers_p.polygons[0]
-        water_ref, water_ref_desc = ref["surface_p10_m"], f"{ref['name']} (order {ref['order']}, {ref['area_km2']} km2) p10 surface"
-    elif layers_p.mask.any():
-        water_ref = float(np.nanmedian(play_raw[layers_p.mask]))
-        water_ref_desc = "median DEM along burned flowlines"
+        water_ref, water_ref_desc = ref["surface_p10_m"], f"{ref['name']} (largest water body, {ref['area_km2']} km2) p10 surface"
     else:
         water_ref, water_ref_desc = float(np.nanmin(play_raw)), "playable minimum (no water found)"
     progress(f"[hydro] reference water surface {water_ref:.2f} m = {water_ref_desc}")
