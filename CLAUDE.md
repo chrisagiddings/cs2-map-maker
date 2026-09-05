@@ -6,8 +6,14 @@ Goal is maps that look convincing to CS2 players, not a one-off script.
 ## Repos
 - Code: https://github.com/chrisagiddings/cs2-map-maker (this folder, `origin`)
 - Published maps: https://github.com/chrisagiddings/cs2-map-maker-maps (local clone `C:\Users\Client\cs2-map-maker-maps`)
-- Open work: issue #1 = `publish` command (folder per map, `{City} - {hash}`, LFS for PNGs).
-- GitHub CLI: `C:\Program Files\GitHub CLI\gh.exe`, logged in as chrisagiddings.
+- Publishing: `python publish_map.py --name <name>` or `make_map.py ... --publish` copies
+  out/<name>/ into the maps repo as `{Display name} - {hash}/` (hash = sha1 of centre, CRS,
+  vertical + channel params; NOT the pipeline commit), writes a per-map README, regenerates the
+  index table in the maps README, commits and pushes. `src/publish.py`, issue #1 (closed).
+- Open issues: #2 LFS, #3 display name, #4 gallery, #5 water-source hints, #6 coastal, #7 dup
+  detection, #8 Stage 6 resource masks.
+- GitHub CLI: `C:\Program Files\GitHub CLI\gh.exe`, logged in as chrisagiddings. Git identity is
+  set per-repo (not globally). git-lfs 3.7 is available.
 
 ## Environment
 - Windows 11, no admin. Python via **uv** (`C:\Users\Client\.local\bin\uv.exe`).
