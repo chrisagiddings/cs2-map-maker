@@ -3,6 +3,12 @@
 Reusable Python pipeline: USGS/GIS data → import-ready CS2 heightmaps.
 Goal is maps that look convincing to CS2 players, not a one-off script.
 
+## Repos
+- Code: https://github.com/chrisagiddings/cs2-map-maker (this folder, `origin`)
+- Published maps: https://github.com/chrisagiddings/cs2-map-maker-maps (local clone `C:\Users\Client\cs2-map-maker-maps`)
+- Open work: issue #1 = `publish` command (folder per map, `{City} - {hash}`, LFS for PNGs).
+- GitHub CLI: `C:\Program Files\GitHub CLI\gh.exe`, logged in as chrisagiddings.
+
 ## Environment
 - Windows 11, no admin. Python via **uv** (`C:\Users\Client\.local\bin\uv.exe`).
 - Venv at `.venv` (Python 3.12.14). Run things with `.venv\Scripts\python.exe` or `uv run`.
