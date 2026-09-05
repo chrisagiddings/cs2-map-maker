@@ -30,6 +30,13 @@ Goal is maps that look convincing to CS2 players, not a one-off script.
 | Height scale range | **200 m – 10,000 m**, default 4000 m |
 | Resource maps | separate **256 × 256** grayscale, white = deposit present |
 
+Spec verification (2026-09-05): rows 1–5 and the resource-map row are confirmed verbatim by
+Colossal Order's Modding Dev Diary #2 and the community maps wiki. **Not confirmed by any
+primary source:** the 200–10,000 m height-scale range and the 4000 m default (one community
+tool says the editor default is 4096 m). Treat those as advisory; the pipeline computes and
+prints its own height scale anyway. The "only red channel" claim is also unconfirmed and moot:
+we always write single-channel. Constants live in `src/spec.py`; export + read-back in `src/export.py`.
+
 Trap: Pillow's `I;16` PNG writing is quirky. Every export must be read back with an
 independent reader and asserted: shape (4096, 4096), dtype uint16, value range spans data.
 (Verified: rasterio/GDAL write → Pillow read round-trips uint16 correctly.)
@@ -79,5 +86,6 @@ good LiDAR, big meandering river to prove channel burning).
 
 ## Stage log
 - Stage 0 (2026-09-05): env bootstrapped, versions verified, CLAUDE.md written. DONE.
-- Stage 1: spec (above) — confirm against CS2 wiki/dev diary; write export + readback test.
+- Stage 1 (2026-09-05): spec verified (see note above); `src/spec.py`, `src/export.py`,
+  `tests/test_export.py` (run `.venv\Scripts\python.exe -m pytest -q`). pytest installed. DONE.
 - Stage 2: fetchers + cache. Stage 3: pipeline rules. Stage 4: QA sheet. Stage 5: CLI. Stage 6: resources.
