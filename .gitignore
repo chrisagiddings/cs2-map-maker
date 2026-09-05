@@ -1,0 +1,6 @@
+﻿.venv/
+data/raw/
+out/
+__pycache__/
+*.pyc
+*.aux.xml
