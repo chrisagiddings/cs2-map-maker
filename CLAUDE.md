@@ -96,9 +96,24 @@ good LiDAR, big meandering river to prove channel burning).
     never resample in degrees. Catalog `LowPS` (Web Mercator m) × cos(lat) ≈ ground resolution.
   - Chattanooga finest source is ~0.8 m LiDAR (TN_HamiltonCounty_B25, TN_27County_blk4_2015,
     GA_Statewide_2018); playable fetched at 1.75 m (2× oversample), world at 14 m direct.
-  - NHDPlus HR layers: 3 NetworkNHDFlowline (`streamorde`), 8 NHDArea, 9 NHDWaterbody. The
-    impounded Tennessee River (Nickajack/Chickamauga) is a **waterbody polygon**, not an NHDArea,
-    with the order-9 flowline running through it. Channel burning must use waterbody+area polygons
-    for width where present and fall back to stream-order width elsewhere.
+  - NHDPlus HR layers: 3 NetworkNHDFlowline (`streamorde`), 8 NHDArea, 9 NHDWaterbody. Through
+    Chattanooga the Tennessee River is an **NHDArea StreamRiver polygon** (ftype 460, 10.7 km² in
+    the playable); the reservoirs up/downstream (Nickajack, Chickamauga) are NHDWaterbody polygons.
+    Channel burning uses both polygon layers for width and stream-order widths for creeks.
   - `--bbox` input only sets the centre; the CS2 footprint is always exactly 14.336/57.344 km.
-- Stage 3: pipeline rules. Stage 4: QA sheet. Stage 5: CLI. Stage 6: resources.
+  - NHD cache keys include `outFields`; keep the field list identical across callers or it re-downloads.
+- Stage 3 (2026-09-05): `src/terrain.py` (block downsample, nodata fill, terracing detect +
+  edge-preserving deterrace, slope), `src/hydro.py` (channel burning), `src/normalize.py`
+  (sea level / exaggeration / one height scale), `src/pipeline.py`, thin `make_map.py`. DONE.
+  Chattanooga result: height scale **610 m**, water surface 193.3 m real (= Nickajack normal pool
+  193.2 m, so detection works) -> 63 m in-game, 50.6 % of land under 10 % slope, 6.2 % water.
+  Design decisions:
+  - Water surface = per-polygon smoothed DEM (masked mean, 120 m window, never above the DEM);
+    depth keyed to the highest-order flowline through the polygon (order 9 -> 12 m); parabolic
+    taper 60 m from the bank. Creeks: buffered flowlines, width/depth by order (`HydroParams`).
+  - Sea level default = lowest value keeping every pixel of BOTH maps >= 5 m above pixel 0.
+    `--sea-level` below that is an error naming the minimum. Exaggeration pivots on the water surface.
+  - Height scale = ceil(union max * 1.02 / 10) * 10. World centre 1024² is overwritten by the
+    downsampled playable after quantization (seam before overwrite was 0.39 m mean).
+  - Terracing: fraction of integer-valued pixels > 0.5 triggers deterrace. LiDAR sites (0.02) skip it.
+- Stage 4: QA contact sheet (`src/qa.py`, hooked in make_map.py already). Stage 4: QA sheet. Stage 5: CLI. Stage 6: resources.
