@@ -38,6 +38,8 @@ def _block(a: np.ndarray, f: int):
 def contact_sheet(res, path: str | Path, *, max_px: int = 2000) -> Path:
     import matplotlib
     matplotlib.use("Agg")
+    from .fonts import install as _install_fonts
+    _install_fonts()
     import matplotlib.pyplot as plt
     from matplotlib.patches import Patch, Rectangle
     from matplotlib.lines import Line2D

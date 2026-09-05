@@ -56,6 +56,8 @@ def display_name(manifest: dict) -> str:
     if dn:
         return str(dn).strip()
     slug = manifest["site"]["name"]
+    if slug.startswith("bench_"):
+        slug = slug[len("bench_"):]                     # benchmark runs publish under the site name
     return " ".join(w.capitalize() for w in slug.replace("_", " ").replace("-", " ").split())
 
 

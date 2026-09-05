@@ -1,0 +1,59 @@
+[
+ {
+  "dem_source": "cop30",
+  "dem_product": "Copernicus GLO-30",
+  "dem_kind": "dsm",
+  "dem_native_m": 30.0,
+  "dem_resample": "upsample-cubic-spline",
+  "mixed_sources": false,
+  "hydro_source": "osm",
+  "flowlines": 2141,
+  "culverted": 588,
+  "nodata_filled": {
+   "playable": 0.0,
+   "world": 0.0
+  },
+  "terracing_playable": 0.020610332489013672,
+  "deterraced": false,
+  "relief_m": 767.312255859375,
+  "min_real_m": 2536.311767578125,
+  "max_real_m": 3303.6240234375,
+  "height_scale_m": 2380.0,
+  "m_per_level": 0.03631647211413749,
+  "sea_level_m": 1092.0,
+  "water_surface_real_m": 2541.83,
+  "water_surface_source": "Río Juan Amarillo (order 7, 0.252 km2) p10 surface",
+  "buildable_land": 0.728052327787556,
+  "water_fraction": 0.018264412879943848,
+  "water_sources": 10,
+  "water_source_kinds": {
+   "stream": 8,
+   "lake": 2
+  },
+  "seam_m": 0.847430366486427,
+  "slope_hist": [
+   0.2616,
+   0.3047,
+   0.1618,
+   0.0584,
+   0.0402,
+   0.0671,
+   0.0611,
+   0.0273,
+   0.0167,
+   0.0012
+  ],
+  "elapsed_s": 54.1,
+  "timings_s": {
+   "elevation": 18.6,
+   "hydrography": 16.0,
+   "burn": 18.0,
+   "finish": 1.4
+  },
+  "downloaded_mb": 187.4,
+  "commit": "78cd4b9",
+  "date": "2026-09-05T18:42:40",
+  "exaggeration": 1.0,
+  "failed": false
+ }
+]

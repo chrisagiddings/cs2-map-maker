@@ -35,6 +35,7 @@ class WaterSourceParams:
     merge_m: float = 150.0          # crossings of the same river closer than this are one crossing
     cluster_m: float = 400.0        # parallel channels crossing within this, same direction -> one source
     loop_m: float = 150.0           # an in/out pair closer than this is a meander nicking the edge: drop both
+    stream_cluster_m: float = 4000.0  # open reaches of one river (same order + drainage) within this -> one source
     sample_px: int = 12             # neighbourhood radius for the surface level at a point
 
 
@@ -125,6 +126,35 @@ def _dedupe_crossings(found: list, p: "WaterSourceParams") -> list:
     return out
 
 
+def _dedupe_streams(cands: list, p: "WaterSourceParams", level_at_point) -> list:
+    """A river broken into several open reaches (culverts, unshared OSM nodes) yields one
+    candidate per reach, all with the same drainage area and order. Keep the highest one
+    (most upstream) among candidates that share (order, drainage) within `stream_cluster_m`."""
+    if len(cands) < 2:
+        return cands
+    keyed = []
+    for da, pt, row, how in cands:
+        keyed.append((int(row["streamorde"]), round(float(da), 1), pt, da, row, how))
+    kept, used = [], [False] * len(keyed)
+    for i, (o, dak, pt, da, row, how) in enumerate(keyed):
+        if used[i]:
+            continue
+        # transitive: a chain of reaches each within the radius of the next is one river
+        cluster, frontier = [i], [i]
+        used[i] = True
+        while frontier:
+            a = frontier.pop()
+            for j in range(len(keyed)):
+                if not used[j] and keyed[j][0] == o and keyed[j][1] == dak and keyed[j][2].distance(keyed[a][2]) <= p.stream_cluster_m:
+                    used[j] = True; cluster.append(j); frontier.append(j)
+        if len(cluster) == 1:
+            kept.append(cands[i]); continue
+        best = max(cluster, key=lambda j: level_at_point(keyed[j][2]))
+        da, pt, row, how = cands[best]
+        kept.append((da, pt, row, how + f"; {len(cluster) - 1} further reach(es) of the same river downstream need no source"))
+    return kept
+
+
 def propose_water_sources(flow, area, wb, site, transform, *, surface_real: np.ndarray, dem_real: np.ndarray,
                           water_mask: np.ndarray, vertical, p: WaterSourceParams | None = None,
                           progress=print) -> list[Placement]:
@@ -138,6 +168,9 @@ def propose_water_sources(flow, area, wb, site, transform, *, surface_real: np.n
 
     def level(px):
         return round(_level_at(px, surface_cs2, dem_cs2, water_mask, p.sample_px), 1)
+
+    def level_at_point(pt):
+        return level(_to_px(transform, pt.x, pt.y))
 
     def name_of(row):
         g = row.get("gnis_name")
@@ -201,6 +234,7 @@ def propose_water_sources(flow, area, wb, site, transform, *, surface_real: np.n
         if entry is None:
             continue
         candidates.append((float(top.get("totdasqkm") or 0), entry, top, how))
+    candidates = _dedupe_streams(candidates, p, level_at_point)
     candidates.sort(key=lambda t: -t[0])
     skipped = len(candidates) - min(len(candidates), p.max_streams)
     biggest = candidates[0][0] if candidates else 1.0

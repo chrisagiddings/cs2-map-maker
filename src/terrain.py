@@ -38,6 +38,9 @@ def terracing_fraction(a: np.ndarray, step_m: float = 1.0, tol: float = 0.01) ->
     """Fraction of pixels whose value sits on a `step_m` grid. ~1.0 means an
     integer-metre source DEM (terraced); LiDAR floats come out near 0."""
     v = a[np.isfinite(a)]
+    v = v[v != 0.0]                      # exact zeros are sea / fill, not contour steps
+    if v.size == 0:
+        return 0.0
     if v.size > 2_000_000:
         v = v[:: v.size // 2_000_000]
     r = np.abs(v / step_m - np.round(v / step_m))

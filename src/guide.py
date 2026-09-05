@@ -146,6 +146,8 @@ def guide_sheet(playable_m: np.ndarray, water_mask: np.ndarray, sea_level_m: flo
     legend of the full symbol set, and the numbered callout table."""
     import matplotlib
     matplotlib.use("Agg")
+    from .fonts import install as _install_fonts
+    _install_fonts()
     import matplotlib.pyplot as plt
     from matplotlib.lines import Line2D
     from matplotlib.colors import LightSource

@@ -114,6 +114,28 @@ def test_parallel_channels_and_edge_nick_are_deduped():
     assert len(borders) == 1 and borders[0].kind == "water.border_river_out" and "Big" in borders[0].label
 
 
+def test_broken_river_reaches_collapse_to_one_stream_source():
+    site = _site()
+    bb = site.playable_bbox
+    tf = from_origin(bb.minx, bb.maxy, 3.5, 3.5)
+    cx, cy = site.cx, site.cy
+    # one river in three open reaches (nodes not shared, e.g. culverts between), same drainage,
+    # flowing east; DEM slopes down to the east so the western reach is the highest
+    reaches = [LineString([(cx - 3000 + i * 2200, cy), (cx - 3000 + i * 2200 + 1500, cy)]) for i in range(3)]
+    flow = gpd.GeoDataFrame({"gnis_name": [None] * 3, "streamorde": [5] * 3, "flowdir": [1] * 3, "levelpathi": [1, 2, 3],
+                             "hydroseq": [1, 1, 1], "startflag": [0, 0, 0], "totdasqkm": [122.0] * 3},
+                            geometry=reaches, crs=site.epsg)
+    empty = gpd.GeoDataFrame({"gnis_name": [], "ftype": []}, geometry=[], crs=site.epsg)
+    dem = np.tile(np.linspace(300, 100, N, dtype=np.float32), (N, 1))
+    v = Vertical(193.0, 63.0, 0.0, 1.0, 610.0, 5.0, 596.0, 0.0093)
+    ps = propose_water_sources(flow, empty, empty, site, tf, surface_real=np.full((N, N), np.nan, np.float32),
+                               dem_real=dem, water_mask=np.zeros((N, N), bool), vertical=v, p=WaterSourceParams(),
+                               progress=lambda *_: None)
+    streams = [p for p in ps if p.kind == "water.stream"]
+    assert len(streams) == 1
+    assert streams[0].px[0] < N // 2 and "2 further reach" in streams[0].why      # the western (highest) one
+
+
 def test_stream_cap_and_direction_confidence():
     site = _site()
     bb = site.playable_bbox
