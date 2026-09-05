@@ -1,0 +1,58 @@
+[
+ {
+  "dem_source": "cop30",
+  "dem_product": "Copernicus GLO-30",
+  "dem_kind": "dsm",
+  "dem_native_m": 30.0,
+  "dem_resample": "upsample-cubic-spline",
+  "mixed_sources": false,
+  "hydro_source": "osm",
+  "flowlines": 6100,
+  "culverted": 1969,
+  "nodata_filled": {
+   "playable": 0.0,
+   "world": 0.0
+  },
+  "terracing_playable": 0.021487712860107422,
+  "deterraced": false,
+  "relief_m": 210.00991821289062,
+  "min_real_m": 26.584415435791016,
+  "max_real_m": 236.59432983398438,
+  "height_scale_m": 410.0,
+  "m_per_level": 0.006256198977645533,
+  "sea_level_m": 38.0,
+  "water_surface_real_m": 28.160362243652344,
+  "water_surface_source": "p10 surface along order-6 flowlines (Bîc, Ciocana, Hulboaca)",
+  "buildable_land": 0.6367188388429526,
+  "water_fraction": 0.011996448040008545,
+  "water_sources": 7,
+  "water_source_kinds": {
+   "stream": 7
+  },
+  "seam_m": 0.25432780300660474,
+  "slope_hist": [
+   0.0711,
+   0.2089,
+   0.3567,
+   0.2112,
+   0.0982,
+   0.0492,
+   0.0044,
+   0.0002,
+   0.0001,
+   0.0
+  ],
+  "elapsed_s": 23.7,
+  "timings_s": {
+   "elevation": 1.5,
+   "hydrography": 3.8,
+   "burn": 16.9,
+   "finish": 1.5
+  },
+  "downloaded_mb": 0.0,
+  "commit": "78cd4b9",
+  "date": "2026-09-05T18:41:26",
+  "exaggeration": 1.0,
+  "failed": false
+ }
+]

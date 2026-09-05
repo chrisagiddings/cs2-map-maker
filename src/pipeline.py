@@ -54,7 +54,15 @@ class Result:
 
 
 def run(site: Site, p: PipelineParams, *, progress=print) -> Result:
+    from .cache import SESSION, reset_session_stats
+    reset_session_stats()
     t0 = time.time()
+    timings: dict = {}
+    _last = [t0]
+
+    def lap(name: str) -> None:
+        now = time.time(); timings[name] = round(now - _last[0], 1); _last[0] = now
+
     stats: dict = {"site": site.describe(), "params": {k: (asdict(v) if hasattr(v, "__dataclass_fields__") else v)
                                                        for k, v in asdict(p).items()}}
 
@@ -85,6 +93,7 @@ def run(site: Site, p: PipelineParams, *, progress=print) -> Result:
     world_raw, f2 = fill_nodata(world_raw)
     stats["nodata_filled_fraction"] = {"playable": f1, "world": f2}
     assert play_raw.shape == (spec.HEIGHTMAP_SIZE,) * 2 and world_raw.shape == (spec.HEIGHTMAP_SIZE,) * 2
+    lap("elevation")
 
     # ---- 2. de-terrace ------------------------------------------------------
     tf_play, tf_world = terracing_fraction(play_raw), terracing_fraction(world_raw)
@@ -104,6 +113,7 @@ def run(site: Site, p: PipelineParams, *, progress=print) -> Result:
                              "culverted": int(flow["culvert"].sum()) if "culvert" in flow else 0,
                              "order_sources": {k: int(v) for k, v in flow["order_source"].value_counts().items()} if "order_source" in flow else {}}
 
+    lap("hydrography")
     layers_p = build_water_layers(play_raw, play_tf, spec.PLAYABLE_M_PER_PX, site.playable_bbox, flow, area, wb, p.hydro, progress=progress)
     layers_w = build_water_layers(world_raw, world_tf, spec.WORLD_M_PER_PX, site.world_bbox, flow, area, wb, p.hydro, progress=progress)
     stats["water_polygons_playable"] = layers_p.polygons
@@ -138,6 +148,8 @@ def run(site: Site, p: PipelineParams, *, progress=print) -> Result:
         progress(f"[hydro] burned {layers_p.mask.mean():.2%} of playable, max carve {np.nanmax(play_raw - play_b):.1f} m")
     else:
         play_b, world_b = play_raw, world_raw
+
+    lap("burn")
 
     # ---- 4. vertical: sea level, exaggeration, one height scale ------------
     v = plan_vertical(play_b, world_b, water_surface_real_m=water_ref, exaggeration=p.exaggeration,
@@ -176,5 +188,13 @@ def run(site: Site, p: PipelineParams, *, progress=print) -> Result:
     wr = world_b[np.isfinite(world_b)]
     stats["world"] = {"min_real_m": float(wr.min()), "max_real_m": float(wr.max()),
                       "px_min": int(world_u16.min()), "px_max": int(world_u16.max())}
+    # slope histogram of land pixels (%): a smooth, empty-tailed histogram is the tell of upsampled data
+    edges = [0, 2, 5, 10, 15, 20, 30, 45, 60, 90, 1e9]
+    land = slope[~layers_p.mask]
+    counts, _ = np.histogram(land, bins=edges)
+    stats["slope_histogram"] = {"edges_pct": edges[:-1] + ["inf"], "fraction": [round(float(c) / max(land.size, 1), 4) for c in counts]}
+    lap("finish")
+    stats["timings_s"] = timings
+    stats["downloaded"] = {"bytes": int(SESSION["bytes"]), "files": int(SESSION["files"])}
     stats["elapsed_s"] = round(time.time() - t0, 1)
     return Result(site, play_u16, world_u16, play_m, world_m, play_raw, layers_p.mask, slope, stats, placements)

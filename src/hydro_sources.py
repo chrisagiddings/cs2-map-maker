@@ -121,6 +121,8 @@ def fetch_hydrorivers(region: str, wgs84_bbox: BBox, *, cache: Cache | None = No
                 for chunk in r.iter_content(1 << 20):
                     f.write(chunk)
             tmp.replace(path)
+        from .cache import SESSION
+        SESSION["bytes"] += path.stat().st_size; SESSION["files"] += 1
         progress(f"[hydrorivers] {path.stat().st_size / 1e6:.0f} MB in {time.time() - t0:.0f}s")
     with zipfile.ZipFile(path) as z:
         shp = [n for n in z.namelist() if n.lower().endswith(".shp")][0]

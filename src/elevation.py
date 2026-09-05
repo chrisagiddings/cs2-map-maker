@@ -232,6 +232,8 @@ class Cop30Source(ElevationSource):
             raise FetchError(f"COP30 {url}: HTTP {r.status_code}")
         tmp = path.with_suffix(".part"); tmp.write_bytes(r.content); tmp.replace(path)
         path.with_suffix(".json").write_text(json.dumps({"url": url, "bytes": len(r.content)}))
+        from .cache import SESSION
+        SESSION["bytes"] += len(r.content); SESSION["files"] += 1
         progress(f"[cop30] {name}: {len(r.content) / 1e6:.1f} MB ({time.time() - t0:.1f}s)")
         return path
 

@@ -12,6 +12,14 @@ from pathlib import Path
 
 RAW_DIR = Path(__file__).resolve().parent.parent / "data" / "raw"
 
+# bytes and files written by every Cache in this process (the benchmark reports them)
+SESSION = {"bytes": 0, "files": 0}
+
+
+def reset_session_stats() -> None:
+    SESSION["bytes"] = 0
+    SESSION["files"] = 0
+
 
 def _canon(obj) -> str:
     return json.dumps(obj, sort_keys=True, separators=(",", ":"), default=str)
@@ -40,6 +48,8 @@ class Cache:
         tmp = p.with_suffix(p.suffix + ".part")
         tmp.write_bytes(data)
         tmp.replace(p)
+        SESSION["bytes"] += len(data)
+        SESSION["files"] += 1
         meta = dict(meta, bytes=len(data), cached_at=time.strftime("%Y-%m-%dT%H:%M:%S"))
         # sidecar must never collide with the blob itself (a .json blob would be overwritten)
         p.with_name(f"{key}.meta.json").write_text(json.dumps(meta, indent=1, default=str))
