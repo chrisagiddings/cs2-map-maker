@@ -249,6 +249,10 @@ def publish(out_dir: str | os.PathLike, maps_repo: str | os.PathLike | None = No
         folder / f"{stem}_qa.png": src_files["qa"],
         folder / f"{stem}_manifest.json": src_files["manifest"],
     }
+    for suffix in ("_guide.png", "_placements.json", "_placements.md"):
+        f = out_dir / f"{name}{suffix}"
+        if f.exists():
+            plan[folder / f"{stem}{suffix}"] = f
     res_dir = out_dir / "resources"
     if res_dir.is_dir():
         for f in sorted(res_dir.glob("*.png")):

@@ -139,4 +139,12 @@ good LiDAR, big meandering river to prove channel burning).
   (argv, timestamp, git commit). Slope/buildability now computed on **in-game** metres so
   exaggeration changes it (x1.0: 50.6 %, x1.3: 44.7 %). README.md added. DONE.
   Variants built: `chatt_sea200` (bbox form, river at 200 m, scale 750), `chatt_x13` (scale 790).
-- Stage 6: resource masks (NLCD, gSSURGO, MRDS). Stage 4: QA sheet. Stage 5: CLI. Stage 6: resources.
+- Stage 6: resource masks (NLCD, gSSURGO, MRDS) = issue #8.
+- Guide sheet (#11, 2026-09-05): `src/guide.py` = `Placement` record (kind, px, elev, label,
+  why, params, geometry), `SYMBOLS` (Okabe-Ito colours + distinct marker per kind, groups: water
+  sources / resources / outside connections / utilities / routes), `guide_sheet()` renders
+  `<name>_guide.png` (hillshade, 1 km grid, N/E/S/W, numbered symbols, key, callout list) and
+  `write_placements()` writes `<name>_placements.json/.md`. make_map.py emits all three every run;
+  publish copies them. `Result.placements` is where producers (#12 water, #13 resources, #14
+  connections) append records. `tools/demo_guide.py` renders every symbol for review.
+  Coordinates: `xy_m` from the SW corner (x east, y north), `xy_center_m` relative to the centre. Stage 4: QA sheet. Stage 5: CLI. Stage 6: resources.

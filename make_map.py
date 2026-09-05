@@ -99,6 +99,12 @@ def main(argv=None) -> int:
 
     from src.qa import contact_sheet
     qa_path = contact_sheet(res, out / f"{a.name}_qa.png")
+    from src.guide import guide_sheet, write_placements
+    v0 = res.stats["vertical"]
+    guide_path = guide_sheet(res.playable_m, res.water_mask, v0["sea_level_m"], a.name, res.placements,
+                             out / f"{a.name}_guide.png", height_scale_m=v0["height_scale_m"])
+    write_placements(res.placements, out / a.name, {"name": a.name, "height_scale_m": v0["height_scale_m"],
+                                                    "sea_level_m": v0["sea_level_m"], "centre": [site.lat, site.lon]})
 
     v = res.stats["vertical"]
     pl = res.stats["playable"]
@@ -113,6 +119,7 @@ def main(argv=None) -> int:
           f"(1 level = {v['m_per_level'] * 100:.1f} cm)")
     print(f"  source DEM: ~{res.stats['dem_source']['finest_ground_m']} m ({res.stats['dem_source']['finest_name']})")
     print(f"  QA sheet: {qa_path}")
+    print(f"  guide:    {guide_path}  ({len(res.placements)} placements)")
     print(f"  outputs in {out}/  ({res.stats['elapsed_s']} s)")
     if a.publish:
         from src.publish import publish

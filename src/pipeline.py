@@ -46,6 +46,7 @@ class Result:
     water_mask: np.ndarray                 # playable-res bool
     slope_pct: np.ndarray
     stats: dict
+    placements: list = field(default_factory=list)   # guide.Placement records from producers (#12-#14)
 
 
 def run(site: Site, p: PipelineParams, *, progress=print) -> Result:
