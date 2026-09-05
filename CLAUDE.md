@@ -15,6 +15,12 @@ Goal is maps that look convincing to CS2 players, not a one-off script.
   first, then #12 water sources, #13 resources, #14 connections/utilities), #10 capture finished
   CS2 maps (.cok + .cok.cid from `LocalLow\Colossal Order\Cities Skylines II\Maps\`).
   Issue drafts live in `.github/issues/`.
+- **Benchmark epic** (`benchmark` label): 10 sites (Chattanooga, Park City, Cheyenne, Chisinau,
+  Lviv, Uji, Pune, Bogota, Lagos, Turin). 7 are outside 3DEP/NHD coverage, so the epic's
+  sub-issues add global elevation (Copernicus GLO-30 via OpenTopography/AWS, national DTMs),
+  global hydrography (OSM + HydroRIVERS), DSM cleaning + mixed-source offset correction, and a
+  `tools/bench.py` scorecard/drift harness. Lviv's world extent crosses the 24°E UTM boundary;
+  Lviv's Poltva is culverted; Lagos is coastal (needs #6); Cheyenne hits the 200 m scale floor.
 - GitHub CLI: `C:\Program Files\GitHub CLI\gh.exe`, logged in as chrisagiddings. Git identity is
   set globally. git-lfs 3.7 is available.
 
