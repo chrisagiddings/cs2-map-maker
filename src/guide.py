@@ -248,7 +248,7 @@ def guide_sheet(playable_m: np.ndarray, water_mask: np.ndarray, sea_level_m: flo
         x, yy = p.xy_m; cx, cy = p.xy_center_m
         e = "" if p.elev_m is None else f" · {p.elev_m:.1f} m"
         axr.text(0, y, f"{i:>2}  {sym.label} · {x:.0f}, {yy:.0f} ({cx:+.0f}, {cy:+.0f}){e} · {p.label}",
-                 fontsize=7.6, color=INK, transform=axr.transAxes, va="top", family="monospace")
+                 fontsize=7.6, color=INK, transform=axr.transAxes, va="top")
         if with_why and p.why:
             axr.text(0.035, y - 0.0155, p.why[:110], fontsize=6.8, color=MUTED, transform=axr.transAxes, va="top")
         y -= step

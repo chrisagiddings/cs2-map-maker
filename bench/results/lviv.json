@@ -54,5 +54,61 @@
   "date": "2026-09-05T18:45:36",
   "exaggeration": 1.0,
   "failed": false
+ },
+ {
+  "dem_source": "cop30",
+  "dem_product": "Copernicus GLO-30",
+  "dem_kind": "dsm",
+  "dem_native_m": 30.0,
+  "dem_resample": "upsample-cubic-spline",
+  "mixed_sources": false,
+  "hydro_source": "osm",
+  "flowlines": 5420,
+  "culverted": 1521,
+  "nodata_filled": {
+   "playable": 0.0,
+   "world": 0.0
+  },
+  "terracing_playable": 0.02030038833618164,
+  "deterraced": false,
+  "relief_m": 191.33255004882812,
+  "min_real_m": 232.17413330078125,
+  "max_real_m": 423.5066833496094,
+  "height_scale_m": 310.0,
+  "m_per_level": 0.00473029678797589,
+  "sea_level_m": 43.0,
+  "water_surface_real_m": 236.21836853027344,
+  "water_surface_source": "p10 surface along order-5 flowlines (unnamed)",
+  "buildable_land": 0.7250266812355826,
+  "water_fraction": 0.005778908729553223,
+  "water_sources": 7,
+  "water_source_kinds": {
+   "stream": 7
+  },
+  "seam_m": 0.27047393730724123,
+  "slope_hist": [
+   0.169,
+   0.2991,
+   0.2569,
+   0.1171,
+   0.0628,
+   0.0623,
+   0.0269,
+   0.0052,
+   0.0007,
+   0.0
+  ],
+  "elapsed_s": 24.8,
+  "timings_s": {
+   "elevation": 0.8,
+   "hydrography": 4.5,
+   "burn": 17.9,
+   "finish": 1.5
+  },
+  "downloaded_mb": 0.0,
+  "commit": "ba376b4",
+  "date": "2026-09-05T19:06:28",
+  "exaggeration": 1.0,
+  "failed": false
  }
 ]

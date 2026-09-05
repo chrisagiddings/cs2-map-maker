@@ -1,22 +1,405 @@
 [
- {"slug": "chattanooga", "name": "Chattanooga", "country": "US", "lat": 35.0456, "lon": -85.3097,
-  "tags": ["baseline", "lidar", "big-river"], "notes": "0.8 m LiDAR, order-9 Tennessee River, 485 m relief"},
- {"slug": "park_city", "name": "Park City", "country": "US", "lat": 40.6461, "lon": -111.4980,
-  "tags": ["high-relief", "high-altitude", "no-big-river"], "notes": "2,100 m base, ~1,000 m playable relief, ski terrain"},
- {"slug": "cheyenne", "name": "Cheyenne", "country": "US", "lat": 41.1400, "lon": -104.8202,
-  "tags": ["flat", "no-big-river", "scale-floor"], "notes": "high plains, tiny creeks, height scale at the 200 m floor"},
- {"slug": "chisinau", "name": "Chisinau", "country": "MD", "lat": 47.0105, "lon": 28.8638,
-  "tags": ["rolling", "cop30-only", "upsample"], "notes": "30 m global DEM only, small river (Bic)"},
- {"slug": "lviv", "name": "Lviv", "country": "UA", "lat": 49.8397, "lon": 24.0297,
-  "tags": ["culverted-river", "utm-zone-boundary", "cop30-only"], "notes": "Poltva runs underground; world extent crosses 24 E"},
- {"slug": "uji", "name": "Uji", "country": "JP", "lat": 34.8845, "lon": 135.7997,
-  "tags": ["dense-urban", "steep-hills", "national-dtm"], "notes": "GSI 5/10 m DTM available (local source), Uji River with weirs"},
- {"slug": "pune", "name": "Pune", "country": "IN", "lat": 18.5204, "lon": 73.8567,
-  "tags": ["plateau", "dsm-artefacts", "dams-upstream"], "notes": "Mula/Mutha rivers, monsoon regime, Deccan hills"},
- {"slug": "bogota", "name": "Bogota", "country": "CO", "lat": 4.7110, "lon": -74.0721,
-  "tags": ["high-altitude", "high-relief", "near-equator", "dsm-artefacts"], "notes": "2,600 m plateau against a 3,600 m cordillera"},
- {"slug": "lagos", "name": "Lagos", "country": "NG", "lat": 6.5244, "lon": 3.3792,
-  "tags": ["coastal", "lagoon", "dsm-artefacts", "needs-bathymetry"], "notes": "lagoon + Atlantic, near sea level, needs #6"},
- {"slug": "turin", "name": "Turin", "country": "IT", "lat": 45.0703, "lon": 7.6869,
-  "tags": ["flat-city", "confluence", "alpine-world", "national-dtm"], "notes": "Po / Dora Riparia confluence, TINITALY 10 m available (local source)"}
+ {
+  "slug": "chattanooga",
+  "name": "Chattanooga",
+  "country": "US",
+  "lat": 35.0456,
+  "lon": -85.3097,
+  "tags": [
+   "baseline",
+   "lidar",
+   "big-river"
+  ],
+  "notes": "0.8 m LiDAR, order-9 Tennessee River, 485 m relief",
+  "expected": {
+   "dem_source": "3dep",
+   "hydro_source": "nhd",
+   "buildable_land": [
+    0.457,
+    0.557
+   ],
+   "height_scale_m": [
+    549.0,
+    671.0
+   ],
+   "relief_m": [
+    436,
+    533
+   ],
+   "water_fraction": [
+    0.042,
+    0.082
+   ],
+   "water_sources": [
+    7,
+    13
+   ],
+   "seam_m_max": 0.5,
+   "reviewed": true,
+   "review_note": "baseline; 10 sources incl. 4 Tennessee crossings; 51 % buildable"
+  }
+ },
+ {
+  "slug": "park_city",
+  "name": "Park City",
+  "country": "US",
+  "lat": 40.6461,
+  "lon": -111.498,
+  "tags": [
+   "high-relief",
+   "high-altitude",
+   "no-big-river"
+  ],
+  "notes": "2,100 m base, ~1,000 m playable relief, ski terrain",
+  "expected": {
+   "dem_source": "3dep",
+   "hydro_source": "nhd",
+   "buildable_land": [
+    0.12,
+    0.3
+   ],
+   "height_scale_m": [
+    2079.0,
+    2541.0
+   ],
+   "relief_m": [
+    1349,
+    1649
+   ],
+   "water_fraction": [
+    0.02,
+    0.06
+   ],
+   "water_sources": [
+    2,
+    8
+   ],
+   "seam_m_max": 0.5,
+   "reviewed": true,
+   "review_note": "19 % buildable is real (ski terrain), below the 40 % comfort line; Jordanelle Reservoir is the reference; scale 2310 m"
+  }
+ },
+ {
+  "slug": "cheyenne",
+  "name": "Cheyenne",
+  "country": "US",
+  "lat": 41.14,
+  "lon": -104.8202,
+  "tags": [
+   "flat",
+   "no-big-river",
+   "scale-floor"
+  ],
+  "notes": "high plains, tiny creeks, height scale at the 200 m floor",
+  "expected": {
+   "dem_source": "3dep",
+   "hydro_source": "nhd",
+   "buildable_land": [
+    0.832,
+    0.932
+   ],
+   "height_scale_m": [
+    603.0,
+    737.0000000000001
+   ],
+   "relief_m": [
+    147,
+    180
+   ],
+   "water_fraction": [
+    0,
+    0.039
+   ],
+   "water_sources": [
+    2,
+    8
+   ],
+   "seam_m_max": 0.5,
+   "reviewed": true,
+   "review_note": "not at the 200 m floor after all: Laramie foothills in the world extent give 650 m of world relief; 88 % buildable; Crow Creek order 7 in NHD HR"
+  }
+ },
+ {
+  "slug": "chisinau",
+  "name": "Chisinau",
+  "country": "MD",
+  "lat": 47.0105,
+  "lon": 28.8638,
+  "tags": [
+   "rolling",
+   "cop30-only",
+   "upsample"
+  ],
+  "notes": "30 m global DEM only, small river (Bic)",
+  "expected": {
+   "dem_source": "cop30",
+   "hydro_source": "osm",
+   "buildable_land": [
+    0.587,
+    0.687
+   ],
+   "height_scale_m": [
+    369.0,
+    451.00000000000006
+   ],
+   "relief_m": [
+    189,
+    231
+   ],
+   "water_fraction": [
+    0,
+    0.032
+   ],
+   "water_sources": [
+    4,
+    10
+   ],
+   "seam_m_max": 0.51,
+   "reviewed": true,
+   "review_note": "Bic anchors the water surface (28 m real) after order-from-area; DSM speckle in the city (#18)"
+  }
+ },
+ {
+  "slug": "lviv",
+  "name": "Lviv",
+  "country": "UA",
+  "lat": 49.8397,
+  "lon": 24.0297,
+  "tags": [
+   "culverted-river",
+   "utm-zone-boundary",
+   "cop30-only"
+  ],
+  "notes": "Poltva runs underground; world extent crosses 24 E",
+  "expected": {
+   "dem_source": "cop30",
+   "hydro_source": "osm",
+   "buildable_land": [
+    0.675,
+    0.775
+   ],
+   "height_scale_m": [
+    279.0,
+    341.0
+   ],
+   "relief_m": [
+    172,
+    210
+   ],
+   "water_fraction": [
+    0,
+    0.026
+   ],
+   "water_sources": [
+    4,
+    10
+   ],
+   "seam_m_max": 0.54,
+   "reviewed": true,
+   "review_note": "Poltva culverted: exactly one stream source on it after reach dedupe; world extent crosses 24 E without issue"
+  }
+ },
+ {
+  "slug": "uji",
+  "name": "Uji",
+  "country": "JP",
+  "lat": 34.8845,
+  "lon": 135.7997,
+  "tags": [
+   "dense-urban",
+   "steep-hills",
+   "national-dtm"
+  ],
+  "notes": "GSI 5/10 m DTM available (local source), Uji River with weirs",
+  "expected": {
+   "dem_source": null,
+   "hydro_source": "osm",
+   "buildable_land": [
+    0.47,
+    0.57
+   ],
+   "height_scale_m": [
+    891.0,
+    1089.0
+   ],
+   "relief_m": [
+    461,
+    564
+   ],
+   "water_fraction": [
+    0.017,
+    0.057
+   ],
+   "water_sources": [
+    8,
+    14
+   ],
+   "seam_m_max": 2.85,
+   "reviewed": true,
+   "review_note": "Japanese names render after font fallback; cop30 until GSI DTM is added locally (then dem_source changes: update expected)"
+  }
+ },
+ {
+  "slug": "pune",
+  "name": "Pune",
+  "country": "IN",
+  "lat": 18.5204,
+  "lon": 73.8567,
+  "tags": [
+   "plateau",
+   "dsm-artefacts",
+   "dams-upstream"
+  ],
+  "notes": "Mula/Mutha rivers, monsoon regime, Deccan hills",
+  "expected": {
+   "dem_source": "cop30",
+   "hydro_source": "osm",
+   "buildable_land": [
+    0.792,
+    0.892
+   ],
+   "height_scale_m": [
+    819.0,
+    1001.0000000000001
+   ],
+   "relief_m": [
+    171,
+    208
+   ],
+   "water_fraction": [
+    0.002,
+    0.042
+   ],
+   "water_sources": [
+    6,
+    12
+   ],
+   "seam_m_max": 0.58,
+   "reviewed": true,
+   "review_note": "DSM building speckle in the NE (#18); Mula-Mutha order 4 reference; 84 % buildable"
+  }
+ },
+ {
+  "slug": "bogota",
+  "name": "Bogota",
+  "country": "CO",
+  "lat": 4.711,
+  "lon": -74.0721,
+  "tags": [
+   "high-altitude",
+   "high-relief",
+   "near-equator",
+   "dsm-artefacts"
+  ],
+  "notes": "2,600 m plateau against a 3,600 m cordillera",
+  "expected": {
+   "dem_source": "cop30",
+   "hydro_source": "osm",
+   "buildable_land": [
+    0.678,
+    0.778
+   ],
+   "height_scale_m": [
+    2142.0,
+    2618.0
+   ],
+   "relief_m": [
+    691,
+    844
+   ],
+   "water_fraction": [
+    0,
+    0.038
+   ],
+   "water_sources": [
+    7,
+    13
+   ],
+   "seam_m_max": 1.69,
+   "reviewed": false,
+   "review_note": "not yet visually reviewed"
+  }
+ },
+ {
+  "slug": "lagos",
+  "name": "Lagos",
+  "country": "NG",
+  "lat": 6.5244,
+  "lon": 3.3792,
+  "tags": [
+   "coastal",
+   "lagoon",
+   "dsm-artefacts",
+   "needs-bathymetry"
+  ],
+  "notes": "lagoon + Atlantic, near sea level, needs #6",
+  "expected": {
+   "dem_source": "cop30",
+   "hydro_source": "osm",
+   "buildable_land": [
+    0.927,
+    1
+   ],
+   "height_scale_m": [
+    180.0,
+    220.00000000000003
+   ],
+   "relief_m": [
+    43,
+    53
+   ],
+   "water_fraction": [
+    0.274,
+    0.314
+   ],
+   "water_sources": [
+    4,
+    10
+   ],
+   "seam_m_max": 6.0,
+   "reviewed": true,
+   "review_note": "sea polygon from DEM works (29 % water); seam 2.9 m and terracing were sea artefacts; no bathymetry (#6) so the sea bed is a 2 m pond"
+  }
+ },
+ {
+  "slug": "turin",
+  "name": "Turin",
+  "country": "IT",
+  "lat": 45.0703,
+  "lon": 7.6869,
+  "tags": [
+   "flat-city",
+   "confluence",
+   "alpine-world",
+   "national-dtm"
+  ],
+  "notes": "Po / Dora Riparia confluence, TINITALY 10 m available (local source)",
+  "expected": {
+   "dem_source": null,
+   "hydro_source": "osm",
+   "buildable_land": [
+    0.577,
+    0.677
+   ],
+   "height_scale_m": [
+    1980.0,
+    2420.0
+   ],
+   "relief_m": [
+    479,
+    585
+   ],
+   "water_fraction": [
+    0.001,
+    0.041
+   ],
+   "water_sources": [
+    2,
+    8
+   ],
+   "seam_m_max": 2.94,
+   "reviewed": true,
+   "review_note": "scale 2200 m because of the Alps in the world extent; Dora Riparia reference; cop30 until TINITALY is added locally"
+  }
+ }
 ]

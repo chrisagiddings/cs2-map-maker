@@ -89,6 +89,23 @@ independent reader and asserted: shape (4096, 4096), dtype uint16, value range s
 - `bench/sites.json` + `make_map.py --site <slug>`. Chisinau builds from cop30 + osm in ~50 s.
 - Cache sidecars are now `<key>.meta.json` (a `.json` blob used to be overwritten by its own meta).
 
+## Benchmark (#19; 2026-09-05)
+- `python tools/bench.py run [--only a,b] [--publish]` builds every site in `bench/sites.json`
+  as `out/bench_<slug>/`, appends a scorecard to `bench/results/<slug>.json` (last 50 runs, keyed
+  by commit), writes 600 px thumbnails to `bench/thumbs/`, rewrites `bench/results.md`
+  (non-US first). `compare <old results dir>` flags drift (buildable +-2 pts, height scale, source
+  count, seam x2, source change); `check` tests the latest run against `expected` ranges in
+  sites.json; `expect [--force]` seeds ranges from the latest run with generous margins
+  (`reviewed: false` until a human has looked at the QA sheet).
+- Manifest now carries `timings_s` per stage, `downloaded` bytes/files, `slope_histogram`.
+- First full run (commit ba376b4): all 10 build. Findings fixed on the spot: Lviv 8 -> 1 source
+  for the culverted Poltva (reaches of one river deduped), CJK/Cyrillic names needed a font
+  fallback (`src/fonts.py`), Lagos sea zeros counted as terracing. Known open: DSM building
+  speckle in Pune/Lagos/Bogota/Uji (#18); Uji/Turin run on cop30 until national DTMs are
+  dropped into `data/local/`; benchmark maps are NOT published to the maps repo (LFS quota).
+- USGS 3DEP can be slow (60-75 s per 2048 px tile at times); a LiDAR site costs ~300 MB and
+  10-20 min on first run, then it is cached.
+
 ## Data sources (free)
 - **Elevation (primary):** USGS 3DEP ImageServer, no key —
   `https://elevation.nationalmap.gov/arcgis/rest/services/3DEPElevation/ImageServer/exportImage`

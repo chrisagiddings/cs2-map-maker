@@ -1,0 +1,58 @@
+[
+ {
+  "dem_source": "3dep",
+  "dem_product": "UT_FEMAHQ_B2_QL1_2018",
+  "dem_kind": "dtm",
+  "dem_native_m": 0.76,
+  "dem_resample": "fetch-fine-then-block-average",
+  "mixed_sources": false,
+  "hydro_source": "nhd",
+  "flowlines": 5948,
+  "culverted": 49,
+  "nodata_filled": {
+   "playable": 0.0,
+   "world": 0.0
+  },
+  "terracing_playable": 0.019305706024169922,
+  "deterraced": false,
+  "relief_m": 1498.81787109375,
+  "min_real_m": 1768.806640625,
+  "max_real_m": 3267.62451171875,
+  "height_scale_m": 2310.0,
+  "m_per_level": 0.035248340581368734,
+  "sea_level_m": 551.0,
+  "water_surface_real_m": 1872.87,
+  "water_surface_source": "Jordanelle Reservoir (order 5, 6.869 km2) p10 surface",
+  "buildable_land": 0.19330449313144446,
+  "water_fraction": 0.039911746978759766,
+  "water_sources": 5,
+  "water_source_kinds": {
+   "stream": 5
+  },
+  "seam_m": 0.05363366521449841,
+  "slope_hist": [
+   0.0357,
+   0.0649,
+   0.0927,
+   0.089,
+   0.0877,
+   0.169,
+   0.2183,
+   0.1587,
+   0.0791,
+   0.0049
+  ],
+  "elapsed_s": 1370.0,
+  "timings_s": {
+   "elevation": 1322.1,
+   "hydrography": 27.3,
+   "burn": 19.1,
+   "finish": 1.5
+  },
+  "downloaded_mb": 544.6,
+  "commit": "78cd4b9",
+  "date": "2026-09-05T19:30:14",
+  "exaggeration": 1.0,
+  "failed": false
+ }
+]

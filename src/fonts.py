@@ -21,6 +21,9 @@ def install() -> list[str]:
     fam = [c for c in CANDIDATES if c in available]
     if fam:
         matplotlib.rcParams["font.family"] = fam
+        # text drawn with family="monospace" resolves through font.monospace, not font.family
+        mono = ["DejaVu Sans Mono"] + [c for c in ("MS Gothic", "Yu Gothic", "Noto Sans Mono CJK JP", "Consolas", "Nirmala UI", "Malgun Gothic") if c in available]
+        matplotlib.rcParams["font.monospace"] = mono
     matplotlib.rcParams["axes.unicode_minus"] = False
     _done = True
     return fam
