@@ -90,7 +90,7 @@ def _check_repo(repo: Path) -> None:
 
 def _lfs_tracked(repo: Path) -> bool:
     ga = repo / ".gitattributes"
-    return ga.exists() and "filter=lfs" in ga.read_text()
+    return ga.exists() and "filter=lfs" in ga.read_text(encoding="utf-8")
 
 
 # ----------------------------------------------------------------------------
@@ -141,7 +141,7 @@ def _index_rows(repo: Path) -> list[str]:
         if not mans:
             continue
         try:
-            m = json.loads(mans[0].read_text())
+            m = json.loads(mans[0].read_text(encoding="utf-8"))
         except Exception:
             continue
         v, pl, site = m["vertical"], m["playable"], m["site"]
@@ -156,7 +156,9 @@ def _index_rows(repo: Path) -> list[str]:
 
 def update_index(repo: Path) -> None:
     readme = repo / "README.md"
-    text = readme.read_text() if readme.exists() else "# cs2-map-maker-maps\n"
+    # errors="replace": a README damaged by an earlier non-UTF-8 write must not block publishing;
+    # the damaged part is inside the index block, which is regenerated below.
+    text = readme.read_text(encoding="utf-8", errors="replace") if readme.exists() else "# cs2-map-maker-maps\n"
     header = ("| Map | Centre | Height scale | Sea level | Exag. | Buildable | Relief | QA | Published |\n"
               "|---|---|---|---|---|---|---|---|---|")
     rows = _index_rows(repo)
@@ -171,7 +173,7 @@ def update_index(repo: Path) -> None:
         text = pre + "## Maps\n\n" + block + "\n"
     else:
         text = text.rstrip() + "\n\n## Maps\n\n" + block + "\n"
-    readme.write_text(text)
+    readme.write_text(text, encoding="utf-8")
 
 
 # ----------------------------------------------------------------------------
@@ -193,7 +195,7 @@ def publish(out_dir: str | os.PathLike, maps_repo: str | os.PathLike | None = No
     mans = list(out_dir.glob("*_manifest.json"))
     if len(mans) != 1:
         raise PublishError(f"expected exactly one *_manifest.json in {out_dir}, found {len(mans)}")
-    manifest = json.loads(mans[0].read_text())
+    manifest = json.loads(mans[0].read_text(encoding="utf-8"))
     name = manifest["site"]["name"]
     if "outputs" not in manifest:
         raise PublishError(f"{mans[0].name} has no 'outputs' block; the build did not finish")
