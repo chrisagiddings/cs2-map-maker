@@ -16,7 +16,7 @@ import numpy as np
 
 from . import spec
 from .export import downsample_playable_to_world, worldmap_center_slice, check_worldmap_center
-from .fetch import fetch_dem, fetch_nhd, dem_source_info
+from .fetch import fetch_dem, fetch_nhd, dem_source_info, FLOWLINE_FIELDS
 from .geo import Site
 from .hydro import HydroParams, build_water_layers, burn_channels
 from .normalize import plan_vertical, apply_vertical, to_uint16
@@ -33,6 +33,7 @@ class PipelineParams:
     burn: bool = True
     hydro: HydroParams = field(default_factory=HydroParams)
     floor_margin_m: float = 5.0
+    water_sources: "WaterSourceParams | None" = None    # None -> defaults
 
 
 @dataclass
@@ -87,7 +88,7 @@ def run(site: Site, p: PipelineParams, *, progress=print) -> Result:
         progress(f"[terrain] no terracing detected (integer fraction playable={tf_play:.2f}, world={tf_world:.2f})")
 
     # ---- 3. hydrography + channel burning ----------------------------------
-    flow = fetch_nhd(site, site.world_bbox, "flowline", out_fields="permanent_identifier,gnis_name,streamorde,ftype,fcode,lengthkm,totdasqkm", progress=progress)
+    flow = fetch_nhd(site, site.world_bbox, "flowline", out_fields=FLOWLINE_FIELDS, progress=progress)
     area = fetch_nhd(site, site.world_bbox, "area", out_fields="permanent_identifier,gnis_name,ftype,fcode,areasqkm", required=False, progress=progress)
     wb = fetch_nhd(site, site.world_bbox, "waterbody", out_fields="permanent_identifier,gnis_name,ftype,fcode,areasqkm", required=False, progress=progress)
 
@@ -122,6 +123,13 @@ def run(site: Site, p: PipelineParams, *, progress=print) -> Result:
     play_m, world_m = apply_vertical(play_b, v), apply_vertical(world_b, v)
     stats["vertical"] = dict(asdict(v), water_surface_source=water_ref_desc)
 
+    # ---- editor advice: water sources (#12) --------------------------------
+    from .water_sources import propose_water_sources
+    placements = propose_water_sources(flow, area, wb, site, play_tf, surface_real=layers_p.surface,
+                                       dem_real=play_raw, water_mask=layers_p.mask, vertical=v,
+                                       p=p.water_sources, progress=progress)
+    stats["water_sources"] = [pl.record(i) for i, pl in enumerate(placements, 1)]
+
     # ---- 5. quantize, enforce world-centre contract, verify ----------------
     play_u16 = to_uint16(play_m, v.height_scale_m)
     world_u16 = to_uint16(world_m, v.height_scale_m)
@@ -147,4 +155,4 @@ def run(site: Site, p: PipelineParams, *, progress=print) -> Result:
     stats["world"] = {"min_real_m": float(wr.min()), "max_real_m": float(wr.max()),
                       "px_min": int(world_u16.min()), "px_max": int(world_u16.max())}
     stats["elapsed_s"] = round(time.time() - t0, 1)
-    return Result(site, play_u16, world_u16, play_m, world_m, play_raw, layers_p.mask, slope, stats)
+    return Result(site, play_u16, world_u16, play_m, world_m, play_raw, layers_p.mask, slope, stats, placements)

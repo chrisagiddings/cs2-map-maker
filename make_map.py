@@ -120,6 +120,14 @@ def main(argv=None) -> int:
     print(f"  source DEM: ~{res.stats['dem_source']['finest_ground_m']} m ({res.stats['dem_source']['finest_name']})")
     print(f"  QA sheet: {qa_path}")
     print(f"  guide:    {guide_path}  ({len(res.placements)} placements)")
+    ws = [pl for pl in res.placements if pl.kind.startswith("water.")]
+    if ws:
+        print("\n  WATER SOURCES (editor: x, y metres from the map centre; level in in-game metres)")
+        from src.guide import SYMBOLS
+        for i, pl in enumerate(ws, 1):
+            cx, cy = pl.xy_center_m
+            lv = "" if pl.elev_m is None else f"level {pl.elev_m:6.1f} m"
+            print(f"   {i:>2}. {SYMBOLS[pl.kind].label:<22} {cx:+8.0f}, {cy:+8.0f}   {lv}   {pl.label}")
     print(f"  outputs in {out}/  ({res.stats['elapsed_s']} s)")
     if a.publish:
         from src.publish import publish

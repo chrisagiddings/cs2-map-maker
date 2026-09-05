@@ -147,4 +147,13 @@ good LiDAR, big meandering river to prove channel burning).
   `write_placements()` writes `<name>_placements.json/.md`. make_map.py emits all three every run;
   publish copies them. `Result.placements` is where producers (#12 water, #13 resources, #14
   connections) append records. `tools/demo_guide.py` renders every symbol for review.
-  Coordinates: `xy_m` from the SW corner (x east, y north), `xy_center_m` relative to the centre. Stage 4: QA sheet. Stage 5: CLI. Stage 6: resources.
+  Coordinates: `xy_m` from the SW corner (x east, y north), `xy_center_m` relative to the centre.
+- Water sources (#12, supersedes #5; 2026-09-05): `src/water_sources.py` `propose_water_sources()`.
+  Border river = order >= 6 flowline crossing the playable edge, in/out from NHD vertex order
+  (`flowdir` 1 = digitised downstream; confidence noted when 0), level = smoothed water surface
+  at the crossing from the un-burned DEM in in-game metres. Stream = order 4-5 creek entering at
+  the edge, headwater inside (`startflag`), or upstream end inside; ranked by `totdasqkm`, cap 8.
+  Lake = polygon >= 0.5 km² wholly inside and not crossed by an order >= 6 river. Border sea from
+  NHDArea 445/312/493 touching the edge. Flowline fetch uses `FLOWLINE_FIELDS` (one list for all
+  callers; changing it invalidates the NHD cache). Chattanooga: 10 sources; the Tennessee crosses
+  the boundary 4 times (E in, N out, W in, W out), all at 63.0-63.4 m. Stage 4: QA sheet. Stage 5: CLI. Stage 6: resources.

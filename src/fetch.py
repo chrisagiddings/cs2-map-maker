@@ -28,6 +28,9 @@ USER_AGENT = "cs2-maps/0.1 (real-world terrain -> Cities: Skylines II heightmaps
 DEM_SERVICE = "https://elevation.nationalmap.gov/arcgis/rest/services/3DEPElevation/ImageServer"
 NHD_SERVICE = "https://hydro.nationalmap.gov/arcgis/rest/services/NHDPlus_HR/MapServer"
 NHD_LAYERS = {"flowline": 3, "area": 8, "waterbody": 9}
+# one field list for every caller: the cache key includes it
+FLOWLINE_FIELDS = ("permanent_identifier,gnis_name,streamorde,ftype,fcode,lengthkm,totdasqkm,"
+                   "flowdir,levelpathi,hydroseq,dnhydroseq,startflag,terminalfl")
 
 DEM_NODATA = -999999.0     # value we ask the server to use for nodata
 DEM_TILE_PX = 2048         # server max is 8000; smaller tiles fail/retry more gracefully

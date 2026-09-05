@@ -16,7 +16,7 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from src import spec                                    # noqa: E402
 from src.geo import Site                                # noqa: E402
-from src.fetch import fetch_dem, fetch_nhd, dem_source_info, FetchError   # noqa: E402
+from src.fetch import fetch_dem, fetch_nhd, dem_source_info, FetchError, FLOWLINE_FIELDS   # noqa: E402
 
 
 def main():
@@ -58,7 +58,7 @@ def main():
               f"min {v.min():.1f} m  max {v.max():.1f} m  relief {v.max() - v.min():.1f} m  -> {p.name}")
 
     flow = fetch_nhd(site, site.world_bbox, "flowline",
-                     out_fields="permanent_identifier,gnis_name,streamorde,ftype,fcode,lengthkm,totdasqkm")
+                     out_fields=FLOWLINE_FIELDS)
     area = fetch_nhd(site, site.world_bbox, "area", out_fields="permanent_identifier,gnis_name,ftype,fcode,areasqkm", required=False)
     wb = fetch_nhd(site, site.world_bbox, "waterbody", out_fields="permanent_identifier,gnis_name,ftype,fcode,areasqkm", required=False)
 
