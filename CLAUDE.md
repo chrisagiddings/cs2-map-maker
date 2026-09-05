@@ -87,5 +87,18 @@ good LiDAR, big meandering river to prove channel burning).
 ## Stage log
 - Stage 0 (2026-09-05): env bootstrapped, versions verified, CLAUDE.md written. DONE.
 - Stage 1 (2026-09-05): spec verified (see note above); `src/spec.py`, `src/export.py`,
-  `tests/test_export.py` (run `.venv\Scripts\python.exe -m pytest -q`). pytest installed. DONE.
-- Stage 2: fetchers + cache. Stage 3: pipeline rules. Stage 4: QA sheet. Stage 5: CLI. Stage 6: resources.
+  `tests/test_export.py` (run `.\.venv\Scripts\python.exe -m pytest -q` from the project root (PowerShell needs the `.\` prefix)). pytest installed. DONE.
+- Stage 2 (2026-09-05): `src/geo.py` (Site, UTM, exact footprints), `src/cache.py`, `src/fetch.py`
+  (3DEP tiled export + NHDPlus HR paged queries), `tools/fetch_site.py` driver. Chattanooga cached
+  (~500 MB in data/raw). DONE. Learned:
+  - 3DEP ImageServer: max 8000 px/tile, we use 2048; accepts bboxSR/imageSR=UTM and returns a
+    georeferenced GeoTIFF, so reprojection happens server-side (bilinear) into metric pixels and we
+    never resample in degrees. Catalog `LowPS` (Web Mercator m) × cos(lat) ≈ ground resolution.
+  - Chattanooga finest source is ~0.8 m LiDAR (TN_HamiltonCounty_B25, TN_27County_blk4_2015,
+    GA_Statewide_2018); playable fetched at 1.75 m (2× oversample), world at 14 m direct.
+  - NHDPlus HR layers: 3 NetworkNHDFlowline (`streamorde`), 8 NHDArea, 9 NHDWaterbody. The
+    impounded Tennessee River (Nickajack/Chickamauga) is a **waterbody polygon**, not an NHDArea,
+    with the order-9 flowline running through it. Channel burning must use waterbody+area polygons
+    for width where present and fall back to stream-order width elsewhere.
+  - `--bbox` input only sets the centre; the CS2 footprint is always exactly 14.336/57.344 km.
+- Stage 3: pipeline rules. Stage 4: QA sheet. Stage 5: CLI. Stage 6: resources.
