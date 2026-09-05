@@ -93,6 +93,23 @@ def _lfs_tracked(repo: Path) -> bool:
     return ga.exists() and "filter=lfs" in ga.read_text(encoding="utf-8")
 
 
+def _lfs_available(repo: Path) -> bool:
+    return _git(repo, "lfs", "version", check=False).returncode == 0
+
+
+def _lfs_check(repo: Path, folder: Path, progress) -> None:
+    """After commit: every heightmap in the folder must be an LFS pointer, not a blob."""
+    rel = str(folder.relative_to(repo)).replace("\\", "/")
+    ls = _git(repo, "lfs", "ls-files", "--name-only", check=False).stdout
+    tracked = {line.strip().replace("\\", "/") for line in ls.splitlines() if line.strip()}
+    expected = [p for p in folder.glob("*_heightmap.png")] + [p for p in folder.glob("*_worldmap.png")]
+    missing = [p.name for p in expected if f"{rel}/{p.name}" not in tracked]
+    if missing:
+        raise PublishError(f"{', '.join(missing)} were committed as plain blobs, not LFS objects. "
+                           f"Is git-lfs installed (`git lfs install`)? Fix with `git lfs migrate import` before pushing.")
+    progress(f"[publish] LFS: {len(expected)} heightmap(s) stored as LFS objects")
+
+
 # ----------------------------------------------------------------------------
 # content
 # ----------------------------------------------------------------------------
@@ -216,9 +233,13 @@ def publish(out_dir: str | os.PathLike, maps_repo: str | os.PathLike | None = No
         raise PublishError(f"refusing to publish: {e}") from e
 
     _check_repo(repo)
-    if not _lfs_tracked(repo):
-        progress(f"[publish] note: {repo.name} does not track PNGs with Git LFS (issue #2); "
-                 f"each map adds ~60 MB of plain blobs")
+    lfs = _lfs_tracked(repo)
+    if lfs and not _lfs_available(repo):
+        raise PublishError(f"{repo.name} tracks heightmaps with Git LFS but git-lfs is not installed. "
+                           f"Install it (bundled with Git for Windows) and run `git lfs install`.")
+    if not lfs:
+        progress(f"[publish] WARNING: {repo.name} does not track PNGs with Git LFS; each map adds ~60 MB of "
+                 f"plain blobs. Run in the maps repo: git lfs install && git lfs track \"*_heightmap.png\" \"*_worldmap.png\"")
 
     folder = repo / folder_name(manifest)
     stem = file_stem(manifest)
@@ -260,6 +281,8 @@ def publish(out_dir: str | os.PathLike, maps_repo: str | os.PathLike | None = No
     _git(repo, "commit", "-q", "-m", message)
     sha = _git(repo, "rev-parse", "--short", "HEAD").stdout.strip()
     progress(f"[publish] committed {sha}: {message}")
+    if lfs:
+        _lfs_check(repo, folder, progress)
     pushed = False
     if push:
         _git(repo, "push", "-q")

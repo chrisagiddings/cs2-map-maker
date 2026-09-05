@@ -145,6 +145,25 @@ def test_publish_refuses_bad_inputs(tmp_path, ramp):
         publish(make_out(tmp_path / "e", ramp), repo, push=False, progress=lambda *_: None)
 
 
+def test_publish_with_lfs(tmp_path, ramp):
+    if subprocess.run(["git", "lfs", "version"], capture_output=True).returncode != 0:
+        pytest.skip("git-lfs not installed")
+    repo = make_repo(tmp_path)
+    subprocess.run(["git", "lfs", "install", "--local"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(["git", "lfs", "track", "*_heightmap.png", "*_worldmap.png"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(["git", "add", ".gitattributes"], cwd=repo, check=True)
+    subprocess.run(["git", "commit", "-q", "-m", "lfs"], cwd=repo, check=True)
+    log = []
+    r = publish(make_out(tmp_path, ramp), repo, push=False, progress=log.append)
+    assert not any("WARNING" in l for l in log)
+    assert any(l.startswith("[publish] LFS: 2 heightmap") for l in log)
+    ls = subprocess.run(["git", "lfs", "ls-files", "--name-only"], cwd=repo, text=True, capture_output=True).stdout
+    assert "Chattanooga_heightmap.png" in ls and "Chattanooga_worldmap.png" in ls
+    # the committed object is a pointer, not the PNG
+    blob = subprocess.run(["git", "show", f"HEAD:{r.folder.name}/Chattanooga_heightmap.png"], cwd=repo, capture_output=True).stdout
+    assert blob.startswith(b"version https://git-lfs.github.com/spec/v1")
+
+
 def test_dry_run_writes_nothing(tmp_path, ramp):
     out = make_out(tmp_path, ramp)
     repo = make_repo(tmp_path)
